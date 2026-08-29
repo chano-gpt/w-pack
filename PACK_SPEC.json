@@ -1,26 +1,32 @@
 {
-  "schema_version": "ZPACK_SPEC_v1.0",
-  "display_name": "Z-Pack",
-  "pack_id": "ZPACK",
-  "pack_version": "ZPACK_v1.2.0-public",
-  "scope": "PUBLIC_TEMPLATE_IMAGE_GENERATION_HARNESS",
-  "repository": "chaos1358/z-pack",
+  "schema_version": "WPACK_SPEC_v1.0",
+  "display_name": "W-Pack",
+  "pack_id": "WPACK",
+  "pack_version": "WPACK_v0.1.0-web",
+  "scope": "CHATGPT_WEB_PROJECT_IMAGE_GENERATION_HARNESS",
+  "repository": "chano-gpt/w-pack",
   "reference_slot_limit": 5,
-  "generation_transport": "CODEX_OAUTH_BUILTIN_IMAGE_GENERATION",
+  "generation_transport": "CHATGPT_BUILTIN_IMAGE_GENERATION",
   "standalone_api_allowed": false,
   "api_key_required": false,
   "local_gpu_required": false,
-  "workspace_policy": {
-    "default_root": "../zpack-workspace",
-    "location_strategy": "PACK_SIBLING_SINGLE_ROOT",
-    "cli_override_scope": "CANONICAL_ROOT_OR_DESCENDANT",
-    "must_be_outside_pack": true,
-    "snapshot_approved_authorities": true,
-    "pack_must_not_reference_workspace": true
+  "authority_roles": [
+    "STYLE",
+    "CHARACTER",
+    "POSE",
+    "PROPORTION",
+    "ITEM"
+  ],
+  "generation_policy": {
+    "fresh_generation_default": true,
+    "previous_candidate_reuse_default": false,
+    "staged_restyle_requires_explicit_opt_in": true,
+    "authority_scope_must_be_explicit": true,
+    "reference_conflicts_must_fail_closed": true
   },
-  "public_distribution": {
-    "ships_authority_images": false,
-    "local_authorities_must_be_rights_cleared": true,
-    "local_authorities_must_not_be_committed": true
+  "project_policy": {
+    "reference_source": "CHATGPT_PROJECT_FILES_OR_CURRENT_CONVERSATION_UPLOADS",
+    "manifest_path": "project/AUTHORITY_MANIFEST.example.json",
+    "instructions_path": "project/PROJECT_INSTRUCTIONS.md"
   }
 }
