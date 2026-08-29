@@ -1,0 +1,26 @@
+{
+  "schema_version": "ZPACK_SPEC_v1.0",
+  "display_name": "Z-Pack",
+  "pack_id": "ZPACK",
+  "pack_version": "ZPACK_v1.2.0-public",
+  "scope": "PUBLIC_TEMPLATE_IMAGE_GENERATION_HARNESS",
+  "repository": "chaos1358/z-pack",
+  "reference_slot_limit": 5,
+  "generation_transport": "CODEX_OAUTH_BUILTIN_IMAGE_GENERATION",
+  "standalone_api_allowed": false,
+  "api_key_required": false,
+  "local_gpu_required": false,
+  "workspace_policy": {
+    "default_root": "../zpack-workspace",
+    "location_strategy": "PACK_SIBLING_SINGLE_ROOT",
+    "cli_override_scope": "CANONICAL_ROOT_OR_DESCENDANT",
+    "must_be_outside_pack": true,
+    "snapshot_approved_authorities": true,
+    "pack_must_not_reference_workspace": true
+  },
+  "public_distribution": {
+    "ships_authority_images": false,
+    "local_authorities_must_be_rights_cleared": true,
+    "local_authorities_must_not_be_committed": true
+  }
+}

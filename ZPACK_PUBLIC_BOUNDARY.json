@@ -1,0 +1,20 @@
+{
+  "schema_version": "ZPACK_PUBLIC_BOUNDARY_v1.0",
+  "included": ["src", "skill", "PACK_SPEC.json", "README.md", "QUICKSTART.md", "pyproject.toml"],
+  "excluded": [
+    "private-assets/characters",
+    "private-assets/items",
+    "private-assets/poses",
+    "private-assets/proportions",
+    "pack/styles/default/sources",
+    "benchmarks",
+    "tests",
+    "dev",
+    "schemas",
+    "validation-private",
+    "archive",
+    "발표기록",
+    "발표자료"
+  ],
+  "public_authority_policy": "RIGHTS_CLEARED_LOCAL_ONLY"
+}
