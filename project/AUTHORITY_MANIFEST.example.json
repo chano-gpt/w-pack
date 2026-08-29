@@ -1,0 +1,54 @@
+{
+  "schema_version": "WPACK_AUTHORITY_MANIFEST_v1.0",
+  "authorities": {
+    "STYLE_CORE_01": {
+      "file": "STYLE_CORE_01.png",
+      "role": "STYLE",
+      "allowed_influence": [
+        "palette",
+        "texture",
+        "lighting_language",
+        "graphic_treatment",
+        "rendering_language"
+      ],
+      "forbidden_influence": [
+        "identity",
+        "pose",
+        "exact_composition",
+        "item_identity"
+      ]
+    },
+    "CHARACTER_01": {
+      "file": "CHARACTER_01.png",
+      "role": "CHARACTER",
+      "allowed_influence": [
+        "identity",
+        "facial_features",
+        "hair",
+        "stable_appearance"
+      ],
+      "forbidden_influence": [
+        "background",
+        "lighting",
+        "composition",
+        "graphic_treatment"
+      ]
+    },
+    "POSE_01": {
+      "file": "POSE_01.png",
+      "role": "POSE",
+      "allowed_influence": [
+        "body_arrangement",
+        "gesture",
+        "stance",
+        "camera_relative_orientation"
+      ],
+      "forbidden_influence": [
+        "identity",
+        "wardrobe",
+        "environment",
+        "style"
+      ]
+    }
+  }
+}

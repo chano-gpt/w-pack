@@ -1,62 +1,125 @@
-<p align="center">
-  <img src="assets/zpack-logo.png" alt="Z-Pack — Image Gen Hybrid Harness" width="760">
-</p>
+# W-Pack
 
-<p align="center">
-  A disciplined image-generation harness for turning a scene brief and your approved local authorities into a reproducible, reviewable generation request.
-</p>
+W-Pack is a reference-bounded image-generation harness for ChatGPT web and ChatGPT Projects.
 
-<p align="center">
-  <a href="#quick-start">Quick start</a> · <a href="#how-it-works">How it works</a> · <a href="#showcase">Showcase</a> · <a href="#public-release-boundary">Public-release boundary</a>
-</p>
+It separates *what you want to create* from *what each reference image is allowed to influence*, then applies fresh-generation and audit rules before and after ChatGPT's built-in image generation.
 
-## Build images with a clear authority chain
+## Target environment
 
-Z-Pack separates what you want to create from the visual authorities allowed to influence it. It compiles scene intent, character or item constraints, proportion requirements, and a selected style authority into a bounded request—then keeps the generated candidate and review evidence outside the repository.
+W-Pack is designed for:
 
-The result is a practical workflow for image projects that need more than a one-off prompt: explicit inputs, SHA-bound local references, controlled retries, and a final human verdict.
+- ChatGPT web
+- ChatGPT Projects
+- ChatGPT Skills
+- ChatGPT built-in image generation
 
-## How it works
+It does **not** require a standalone image API, API key, local GPU, or Codex OAuth.
 
-1. **Bring your own rights-cleared authorities.** Add only images you own or may use. Z-Pack never ships proprietary style, character, pose, or item references.
-2. **Compile a bounded request.** Select the approved authorities and describe the scene, framing, physical constraints, and lighting.
-3. **Generate fresh.** Normal retries begin from approved authorities again; previous candidates are not silently reused as style inputs.
-4. **Review and verify.** Keep candidates, evidence, and audits in the external workspace, then make the final visual decision deliberately.
+## Authority roles
 
-## Showcase
+Each generation reference receives an explicit primary role:
 
-<p align="center">
-  <img src="assets/showcase-samurai-portrait.png" alt="Showcase: cinematic samurai portrait" width="31%">
-  <img src="assets/showcase-samurai-action.png" alt="Showcase: full-body samurai action scene" width="31%">
-  <img src="assets/showcase-fantasy-rider.png" alt="Showcase: epic fantasy rider scene" width="31%">
-</p>
+- `STYLE` — palette, texture, lighting language, rendering/graphic treatment
+- `CHARACTER` — identity and stable appearance
+- `POSE` — body arrangement and gesture
+- `PROPORTION` — relative physical scale
+- `ITEM` — specified object identity and structure
 
-<p align="center"><sub>Project-owner supplied showcase outputs. They are included for presentation only—not as style, identity, pose, proportion, or item authorities.</sub></p>
+A reference must not silently influence properties outside its authority scope.
 
-## Quick start
+## Recommended ChatGPT Project setup
 
-```bash
-python3 -m pip install -e .
-zpack doctor
-zpack init
+1. Create a dedicated ChatGPT Project for image work.
+2. Add your reusable reference images to the Project.
+3. Copy `project/PROJECT_INSTRUCTIONS.md` into the Project instructions.
+4. Create an authority manifest based on `project/AUTHORITY_MANIFEST.example.json`.
+5. Install or upload the W-Pack Skill from `skill/` when Skill support is available in your workspace.
+
+Example request:
+
+```text
+Create a 4:5 fashion editorial poster.
+
+STYLE: STYLE_CORE_01
+CHARACTER: CHARACTER_01
+POSE: POSE_01
+
+Scene: brutalist concrete interior with late-afternoon directional light.
+Generate fresh. Do not use previous candidates as references.
 ```
 
-The public starter validates with zero authorities. Before compiling a request, add only rights-cleared local assets and complete your own review process. See [QUICKSTART.md](QUICKSTART.md) for the command flow.
+## Workflow
 
-## Public-release boundary
-
-This repository intentionally excludes authority images, generated run data, private evaluations, benchmark and test artifacts, presentation decks, credentials, and tokens. Local authority folders are ignored by Git:
-
-- `private-assets/characters/`, `items/`, `poses/`, and `proportions/`
-- `pack/styles/default/sources/`
-- inboxes, output, and local presentation folders
-
-Before every push, review what is staged:
-
-```bash
-git status --short
-git diff --cached --name-only
-zpack doctor
+```text
+User brief
+  -> resolve explicit authorities
+  -> validate manifest and request
+  -> compile bounded generation brief
+  -> ChatGPT built-in image generation
+  -> audit scene compliance / fidelity / leakage / structure
 ```
 
-The included showcase images do not grant a license to third-party images, names, or styles. Add a project license before accepting outside contributions or redistributing the code.
+Fresh generation is the default. Previous generated candidates are reused only when the user explicitly requests an edit, refinement, continuation, or staged restyle.
+
+## Deterministic validation
+
+The web port keeps deterministic checks inside the Skill bundle rather than the upstream local CLI runtime.
+
+```text
+skill/scripts/validate_authorities.py
+```
+
+Checks include:
+
+- valid authority roles and influence boundaries
+- maximum of five generation references
+- unknown or duplicate authority IDs
+- authority-scope expansion
+- overlapping explicit influence claims
+- accidental prior-candidate/edit-target use in `FRESH` mode
+- explicit opt-in requirements for `STAGED_RESTYLE`
+
+The bounded request compiler is:
+
+```text
+skill/scripts/compile_request.py
+```
+
+It produces `WPACK_COMPILED_REQUEST_v1.0`, which is the semantic contract used immediately before ChatGPT image generation.
+
+Example metadata files are available under `project/`:
+
+```text
+project/
+├── PROJECT_INSTRUCTIONS.md
+├── AUTHORITY_MANIFEST.example.json
+└── GENERATION_REQUEST.example.json
+```
+
+## Skill structure
+
+```text
+skill/
+├── SKILL.md
+├── agents/
+│   └── openai.yaml
+├── scripts/
+│   ├── validate_authorities.py
+│   └── compile_request.py
+└── references/
+    ├── authority-model.md
+    ├── generation-policy.md
+    └── audit-policy.md
+```
+
+The semantic tasks remain instruction-led. Deterministic scripts cover only checks where fail-closed behavior materially improves reliability.
+
+## Legacy boundary
+
+The upstream `src/zpack`, `pack`, `private-assets`, and `output` paths remain temporarily for provenance and migration reference. They are not part of the ChatGPT web execution path. See `LEGACY.md`.
+
+The root package no longer exposes the legacy `zpack` CLI in the web-port branch.
+
+## Current status
+
+`WPACK_v0.2.0-web` is the second web-port milestone: ChatGPT-native authority semantics plus deterministic manifest/request validation and compilation.
