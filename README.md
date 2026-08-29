@@ -53,13 +53,48 @@ Generate fresh. Do not use previous candidates as references.
 ```text
 User brief
   -> resolve explicit authorities
-  -> validate authority scopes
+  -> validate manifest and request
   -> compile bounded generation brief
   -> ChatGPT built-in image generation
   -> audit scene compliance / fidelity / leakage / structure
 ```
 
 Fresh generation is the default. Previous generated candidates are reused only when the user explicitly requests an edit, refinement, continuation, or staged restyle.
+
+## Deterministic validation
+
+The web port keeps deterministic checks inside the Skill bundle rather than the upstream local CLI runtime.
+
+```text
+skill/scripts/validate_authorities.py
+```
+
+Checks include:
+
+- valid authority roles and influence boundaries
+- maximum of five generation references
+- unknown or duplicate authority IDs
+- authority-scope expansion
+- overlapping explicit influence claims
+- accidental prior-candidate/edit-target use in `FRESH` mode
+- explicit opt-in requirements for `STAGED_RESTYLE`
+
+The bounded request compiler is:
+
+```text
+skill/scripts/compile_request.py
+```
+
+It produces `WPACK_COMPILED_REQUEST_v1.0`, which is the semantic contract used immediately before ChatGPT image generation.
+
+Example metadata files are available under `project/`:
+
+```text
+project/
+├── PROJECT_INSTRUCTIONS.md
+├── AUTHORITY_MANIFEST.example.json
+└── GENERATION_REQUEST.example.json
+```
 
 ## Skill structure
 
@@ -68,24 +103,23 @@ skill/
 ├── SKILL.md
 ├── agents/
 │   └── openai.yaml
+├── scripts/
+│   ├── validate_authorities.py
+│   └── compile_request.py
 └── references/
     ├── authority-model.md
     ├── generation-policy.md
     └── audit-policy.md
 ```
 
-The Skill is intentionally instruction-led. ChatGPT handles semantic compilation and review directly; deterministic scripts should be added only where they materially improve reliability.
+The semantic tasks remain instruction-led. Deterministic scripts cover only checks where fail-closed behavior materially improves reliability.
 
-## Project files
+## Legacy boundary
 
-```text
-project/
-├── PROJECT_INSTRUCTIONS.md
-└── AUTHORITY_MANIFEST.example.json
-```
+The upstream `src/zpack`, `pack`, `private-assets`, and `output` paths remain temporarily for provenance and migration reference. They are not part of the ChatGPT web execution path. See `LEGACY.md`.
 
-Project files are the bridge between a persistent ChatGPT Project reference library and W-Pack's authority model.
+The root package no longer exposes the legacy `zpack` CLI in the web-port branch.
 
 ## Current status
 
-`WPACK_v0.1.0-web` is the first web-port foundation. The repository still contains legacy Z-Pack CLI/runtime files from the upstream fork; those are not part of the ChatGPT web execution path and will be isolated or removed as the port matures.
+`WPACK_v0.2.0-web` is the second web-port milestone: ChatGPT-native authority semantics plus deterministic manifest/request validation and compilation.
