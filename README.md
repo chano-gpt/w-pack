@@ -15,6 +15,8 @@
 [![Skill](https://img.shields.io/badge/ChatGPT-Skill-111111?style=flat-square)](./skill)
 [![No API Key](https://img.shields.io/badge/API%20key-not%20required-111111?style=flat-square)](#how-it-works)
 
+**English** · [한국어](./README.ko.md) · [日本語](./README.ja.md) · [简体中文](./README.zh-CN.md) · [繁體中文](./README.zh-TW.md) · [Español](./README.es.md) · [Português (Brasil)](./README.pt-BR.md) · [Français](./README.fr.md) · [Deutsch](./README.de.md)
+
 [Quick start](#quick-start) · [How it works](#how-it-works) · [Authority model](#authority-model) · [Project setup](#chatgpt-project-setup) · [Architecture](#architecture)
 
 </div>
@@ -28,10 +30,10 @@ Instead of turning every reference image into an unrestricted visual prompt, W-P
 You can still speak naturally:
 
 ```text
-이 느낌으로 만들어.
-이 사람은 그대로 유지해.
-첫 번째 이미지는 스타일만 참고하고 두 번째 이미지 구도로 가자.
-이 이미지에서 얼굴과 구도는 그대로 두고 옷만 바꿔.
+Make it with the visual feel of the first image.
+Keep the person from the second image unchanged.
+Use the composition of the third image.
+In this image, keep the face and composition but change only the outfit.
 ```
 
 W-Pack resolves those instructions into explicit reference roles before ChatGPT generates the image.
@@ -64,11 +66,11 @@ W-Pack separates those concerns.
 
 ## Highlights
 
-- **Chat-native reference control** — use phrases such as `이 느낌으로`, `이 사람 그대로`, `이 포즈로`, and `이 구도로`.
+- **Chat-native reference control** — use natural phrases such as “use this style,” “keep this person,” “use this pose,” or “use this composition.”
 - **Inline references** — images attached in the current conversation do not need a manifest entry.
 - **Six bounded authority roles** — `STYLE`, `CHARACTER`, `POSE`, `COMPOSITION`, `PROPORTION`, and `ITEM`.
 - **Fresh vs edit semantics** — new generation and modification of an existing image are treated differently.
-- **Project source profiles** — reusable reference sets can be activated with short requests such as `소스 참고해서`.
+- **Project source profiles** — reusable reference sets can be activated with short requests.
 - **Deterministic validation** — optional scripts catch authority conflicts and invalid requests before generation.
 
 ## Quick start
@@ -81,17 +83,18 @@ For a packaged Skill, use the validated `skill.zip` generated from this director
 
 ### 2. Use it directly in chat
 
-Attach one or more reference images and write what each image should influence in normal language.
+Attach one or more reference images and say what each image should influence.
 
 ```text
 @W-Pack
 
-첫 번째 이미지는 스타일만 참고.
-두 번째 이미지의 인물은 그대로 유지.
-세 번째 이미지 구도로 새 이미지 만들어.
+Use the first image for style only.
+Keep the person from the second image unchanged.
+Use the composition of the third image.
 
-배경은 노을진 실내, 부드러운 자연광.
-4:5 세로 비율.
+Background: sunset interior with soft natural light.
+Aspect ratio: 4:5.
+Generate a fresh image.
 ```
 
 No JSON. No local CLI. No API key.
@@ -128,13 +131,13 @@ Detailed semantics live in [`skill/references/authority-model.md`](./skill/refer
 W-Pack maps explicit chat intent to authority roles.
 
 ```text
-“이 느낌으로”            -> STYLE
-“이 사람 그대로”         -> CHARACTER
-“이 포즈로”              -> POSE
-“이 구도로”              -> COMPOSITION
-“이 제품 그대로”         -> ITEM
-“여기서 ~만 바꿔”        -> EDIT
-“새 이미지로 만들어”     -> FRESH
+“Use this visual feel”          -> STYLE
+“Keep this person”              -> CHARACTER
+“Use this pose”                 -> POSE
+“Use this composition”          -> COMPOSITION
+“Keep this product exactly”     -> ITEM
+“Change only ... in this image” -> EDIT
+“Generate a new image”          -> FRESH
 ```
 
 W-Pack may infer a role from what the user **says**, but not merely from what happens to be visible inside an image.
@@ -143,27 +146,19 @@ See [`skill/references/chat-intent-resolution.md`](./skill/references/chat-inten
 
 ## Fresh and edit modes
 
-W-Pack uses two top-level generation modes.
-
 ### `FRESH`
 
 Use for a new image or a remake driven by approved references.
 
 - Previous generated candidates are not silently reused.
 - Only currently selected references may influence the run.
-- Default mode when the user asks to create or generate a new image.
+- This is the default when the user asks for a new image.
 
 ### `EDIT`
 
 Use when the user explicitly wants to modify an existing image target.
 
-Internally, edits may be classified as:
-
-- `MODIFY` — change selected content while preserving requested properties.
-- `RESTYLE` — preserve structure while changing visual language.
-- `RECOMPOSE` — preserve selected content while changing framing or layout.
-
-The user does not need to name these subtypes.
+Internally, edits may be classified as `MODIFY`, `RESTYLE`, or `RECOMPOSE`. Users do not need to name these subtypes.
 
 ## ChatGPT Project setup
 
@@ -179,71 +174,17 @@ ChatGPT Project
 
 A Project reference is never automatically active just because it exists in the Project. W-Pack selects only the references needed for the current request.
 
-### Source profiles
-
-Projects can define short aliases for recurring authority sets.
-
-For example:
-
-```text
-DEFAULT
-├── STYLE_CORE_01
-├── CHARACTER_DEFAULT
-└── PROPORTION_DEFAULT
-```
-
-Then a request such as:
-
-```text
-@W-Pack
-20대 여성, 셀카, 부드러운 자연광.
-소스 참고해서 새 이미지로 제작.
-```
-
-can activate the configured profile without requiring the user to restate every authority ID.
-
-See [`skill/references/source-profiles.md`](./skill/references/source-profiles.md).
-
 ## How it works
 
 ```text
-┌─────────────────────────┐
-│   Natural chat request  │
-└────────────┬────────────┘
-             │
-             v
-┌─────────────────────────┐
-│ Resolve FRESH vs EDIT   │
-└────────────┬────────────┘
-             │
-             v
-┌─────────────────────────┐
-│ Resolve reference roles │
-│ + optional source set   │
-└────────────┬────────────┘
-             │
-             v
-┌─────────────────────────┐
-│ Validate authority      │
-│ scopes and conflicts    │
-└────────────┬────────────┘
-             │
-             v
-┌─────────────────────────┐
-│ Compile bounded brief   │
-│ scene / light / layout  │
-│ text / preserve / avoid │
-└────────────┬────────────┘
-             │
-             v
-┌─────────────────────────┐
-│ ChatGPT image generation│
-└────────────┬────────────┘
-             │
-             v
-┌─────────────────────────┐
-│ Silent output audit     │
-└─────────────────────────┘
+Natural chat request
+  -> resolve FRESH vs EDIT
+  -> resolve reference roles
+  -> apply optional Project source profile
+  -> validate scopes and conflicts
+  -> compile scene / composition / lighting / text / preserve / avoid
+  -> ChatGPT image generation
+  -> silent output audit
 ```
 
 W-Pack prefers the minimum reference set required for the request and allows at most five generation references.
@@ -282,9 +223,7 @@ The legacy `src/zpack`, `pack`, `private-assets`, and `output` paths are retaine
 
 ## Validation
 
-The semantic workflow is instruction-led. Deterministic scripts cover checks where fail-closed behavior improves reliability.
-
-Run the smoke test:
+Run:
 
 ```bash
 python3 skill/scripts/self_test.py
@@ -295,16 +234,6 @@ Expected result:
 ```text
 W-Pack self-test: PASS
 ```
-
-Validation currently checks, among other things:
-
-- allowed authority roles and influence boundaries
-- inline vs Project authority semantics
-- maximum reference count
-- unknown and duplicate authorities
-- overlapping influence claims
-- invalid FRESH requests containing edit targets
-- EDIT target requirements
 
 ## Design principles
 
@@ -322,16 +251,7 @@ Validation currently checks, among other things:
 
 `WPACK_v0.3.0-chat-native` is the current ChatGPT Web milestone.
 
-This release focuses on:
-
-- inline conversation references
-- natural-language authority resolution
-- composition authority
-- FRESH / EDIT semantics
-- optional Project source profiles
-- deterministic request validation and compilation
-
-W-Pack is evolving alongside ChatGPT's image-generation and Skill capabilities. The contract intentionally stays focused on reference control rather than trying to reproduce the entire image-generation runtime.
+This release focuses on inline conversation references, natural-language authority resolution, composition authority, FRESH / EDIT semantics, optional Project source profiles, and deterministic request validation and compilation.
 
 ## Repository map
 
