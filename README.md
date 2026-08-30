@@ -1,8 +1,8 @@
 # W-Pack
 
-W-Pack is a reference-bounded image-generation harness for ChatGPT web and ChatGPT Projects.
+W-Pack is a chat-native reference control layer for image generation and editing in ChatGPT web and ChatGPT Projects.
 
-It separates *what you want to create* from *what each reference image is allowed to influence*, then applies fresh-generation and audit rules before and after ChatGPT's built-in image generation.
+It lets users speak naturally — for example, "이 느낌으로", "이 사람 그대로", "이 포즈로", "이 구도로", or "소스 참고해서" — while keeping each reference image bounded to the visual properties it is actually allowed to influence.
 
 ## Target environment
 
@@ -13,113 +13,110 @@ W-Pack is designed for:
 - ChatGPT Skills
 - ChatGPT built-in image generation
 
-It does **not** require a standalone image API, API key, local GPU, or Codex OAuth.
+It does not require a standalone image API, API key, local GPU, Codex OAuth, or a local CLI.
 
-## Authority roles
+## Chat-native authority model
 
-Each generation reference receives an explicit primary role:
+References can come from reusable Project files or directly from images attached in the current conversation.
 
-- `STYLE` — palette, texture, lighting language, rendering/graphic treatment
+Supported authority roles:
+
+- `STYLE` — palette, texture, lighting language, rendering and graphic treatment
 - `CHARACTER` — identity and stable appearance
 - `POSE` — body arrangement and gesture
+- `COMPOSITION` — framing, crop, camera angle, subject placement, hierarchy, negative space
 - `PROPORTION` — relative physical scale
 - `ITEM` — specified object identity and structure
 
-A reference must not silently influence properties outside its authority scope.
+A reference must not silently influence unrelated properties.
 
-## Recommended ChatGPT Project setup
-
-1. Create a dedicated ChatGPT Project for image work.
-2. Add your reusable reference images to the Project.
-3. Copy `project/PROJECT_INSTRUCTIONS.md` into the Project instructions.
-4. Create an authority manifest based on `project/AUTHORITY_MANIFEST.example.json`.
-5. Install or upload the W-Pack Skill from `skill/` when Skill support is available in your workspace.
-
-Example request:
+## Natural-language examples
 
 ```text
-Create a 4:5 fashion editorial poster.
-
-STYLE: STYLE_CORE_01
-CHARACTER: CHARACTER_01
-POSE: POSE_01
-
-Scene: brutalist concrete interior with late-afternoon directional light.
-Generate fresh. Do not use previous candidates as references.
+@W-Pack
+20대 여성, 교복, 셀카, 부드러운 빛.
+소스 참고해서 새 이미지로 제작.
 ```
+
+```text
+@W-Pack
+첫 번째 첨부 이미지는 느낌만 참고하고,
+두 번째 이미지의 인물은 그대로 유지.
+세 번째 이미지 구도로 만들어.
+```
+
+```text
+@W-Pack
+이 이미지에서 얼굴과 구도는 그대로 두고 옷만 바꿔.
+```
+
+W-Pack resolves these requests internally instead of requiring the user to write JSON or manifest IDs.
+
+## Modes
+
+- `FRESH` — default for new generations and remakes from references.
+- `EDIT` — used when an existing image target is being modified, preserved, refined, restyled, or recomposed.
+
+EDIT may be classified internally as `MODIFY`, `RESTYLE`, or `RECOMPOSE`; users do not need to name these subtypes.
+
+## Project sources and inline sources
+
+- `PROJECT_AUTHORITY` — reusable reference stored in a ChatGPT Project, optionally registered in an authority manifest.
+- `INLINE_AUTHORITY` — image attached or clearly identified in the current conversation. No manifest entry is required.
+
+Projects may optionally define source profiles such as `DEFAULT` for recurring source sets. A request such as "소스 참고해서" can activate an explicitly configured profile while keeping all authority boundaries intact.
 
 ## Workflow
 
 ```text
-User brief
-  -> resolve explicit authorities
-  -> validate manifest and request
-  -> compile bounded generation brief
+User chat request
+  -> resolve FRESH vs EDIT
+  -> resolve explicit references and natural-language roles
+  -> apply optional Project source profile
+  -> validate scopes and conflicts
+  -> compile scene / composition / lighting / text / preserve / avoid
   -> ChatGPT built-in image generation
-  -> audit scene compliance / fidelity / leakage / structure
+  -> silent audit for fidelity and reference leakage
 ```
 
-Fresh generation is the default. Previous generated candidates are reused only when the user explicitly requests an edit, refinement, continuation, or staged restyle.
-
-## Deterministic validation
-
-The web port keeps deterministic checks inside the Skill bundle rather than the upstream local CLI runtime.
-
-```text
-skill/scripts/validate_authorities.py
-```
-
-Checks include:
-
-- valid authority roles and influence boundaries
-- maximum of five generation references
-- unknown or duplicate authority IDs
-- authority-scope expansion
-- overlapping explicit influence claims
-- accidental prior-candidate/edit-target use in `FRESH` mode
-- explicit opt-in requirements for `STAGED_RESTYLE`
-
-The bounded request compiler is:
-
-```text
-skill/scripts/compile_request.py
-```
-
-It produces `WPACK_COMPILED_REQUEST_v1.0`, which is the semantic contract used immediately before ChatGPT image generation.
-
-Example metadata files are available under `project/`:
-
-```text
-project/
-├── PROJECT_INSTRUCTIONS.md
-├── AUTHORITY_MANIFEST.example.json
-└── GENERATION_REQUEST.example.json
-```
+Use no more than five generation references and prefer the minimum necessary set. Previous generated candidates are never silently reused in FRESH mode.
 
 ## Skill structure
 
 ```text
 skill/
 ├── SKILL.md
-├── agents/
-│   └── openai.yaml
+├── agents/openai.yaml
 ├── scripts/
 │   ├── validate_authorities.py
-│   └── compile_request.py
+│   ├── compile_request.py
+│   └── self_test.py
 └── references/
+    ├── chat-intent-resolution.md
     ├── authority-model.md
     ├── generation-policy.md
-    └── audit-policy.md
+    ├── edit-policy.md
+    ├── source-profiles.md
+    ├── audit-policy.md
+    └── project-setup.md
 ```
 
-The semantic tasks remain instruction-led. Deterministic scripts cover only checks where fail-closed behavior materially improves reliability.
+## Validation
 
-## Legacy boundary
+Run:
 
-The upstream `src/zpack`, `pack`, `private-assets`, and `output` paths remain temporarily for provenance and migration reference. They are not part of the ChatGPT web execution path. See `LEGACY.md`.
+```bash
+python3 skill/scripts/self_test.py
+```
 
-The root package no longer exposes the legacy `zpack` CLI in the web-port branch.
+Expected result:
+
+```text
+W-Pack self-test: PASS
+```
 
 ## Current status
 
-`WPACK_v0.2.0-web` is the second web-port milestone: ChatGPT-native authority semantics plus deterministic manifest/request validation and compilation.
+`WPACK_v0.3.0-chat-native` focuses on ChatGPT web ergonomics: inline references, natural-language authority resolution, composition authority, FRESH/EDIT semantics, and optional Project source profiles.
+
+Legacy `src/zpack`, `pack`, `private-assets`, and `output` paths remain provenance-only and are not part of the ChatGPT web execution path.
