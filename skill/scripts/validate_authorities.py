@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Validate W-Pack authority manifests and optional generation requests.
-
-This script validates metadata only. It does not inspect image pixels or resolve
-ChatGPT Project files. Image availability remains the responsibility of the
-calling ChatGPT session.
-"""
+"""Validate W-Pack Project manifests and chat-native generation requests."""
 
 from __future__ import annotations
 
@@ -15,24 +10,36 @@ from pathlib import Path
 from typing import Any
 
 MANIFEST_SCHEMA = "WPACK_AUTHORITY_MANIFEST_v1.0"
-REQUEST_SCHEMA = "WPACK_GENERATION_REQUEST_v1.0"
-ALLOWED_ROLES = {"STYLE", "CHARACTER", "POSE", "PROPORTION", "ITEM"}
+REQUEST_SCHEMAS = {"WPACK_GENERATION_REQUEST_v1.0", "WPACK_GENERATION_REQUEST_v1.1"}
+ALLOWED_ROLES = {"STYLE", "CHARACTER", "POSE", "COMPOSITION", "PROPORTION", "ITEM"}
+ALLOWED_SOURCES = {"PROJECT_AUTHORITY", "INLINE_AUTHORITY"}
 REFERENCE_SLOT_LIMIT = 5
 
 ROLE_REQUIRED_ALLOWED = {
     "STYLE": {"palette", "rendering_language"},
     "CHARACTER": {"identity"},
     "POSE": {"body_arrangement"},
+    "COMPOSITION": {"framing"},
     "PROPORTION": {"proportion"},
     "ITEM": {"item_identity"},
 }
 
 ROLE_REQUIRED_FORBIDDEN = {
-    "STYLE": {"identity", "pose", "exact_composition", "item_identity"},
+    "STYLE": {"identity", "pose", "composition", "item_identity"},
     "CHARACTER": {"background", "composition", "graphic_treatment"},
     "POSE": {"identity", "environment", "style"},
+    "COMPOSITION": {"identity", "style", "item_identity"},
     "PROPORTION": {"identity", "style"},
     "ITEM": {"identity", "background", "style"},
+}
+
+DEFAULT_INLINE_ALLOWED = {
+    "STYLE": {"palette", "texture", "lighting_language", "graphic_treatment", "rendering_language", "surface_treatment", "typography_character"},
+    "CHARACTER": {"identity", "facial_features", "hair", "stable_appearance", "wardrobe"},
+    "POSE": {"body_arrangement", "gesture", "stance", "limb_relationship", "camera_relative_orientation"},
+    "COMPOSITION": {"framing", "crop", "camera_angle", "subject_placement", "layout_structure", "visual_hierarchy", "negative_space", "spatial_arrangement"},
+    "PROPORTION": {"proportion", "physical_scale", "body_to_object_ratio", "object_to_object_scale", "relative_dimensions"},
+    "ITEM": {"item_identity", "silhouette", "structural_details", "material", "item_color"},
 }
 
 
@@ -107,50 +114,79 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
     return errors
 
 
+def _request_references(request: dict[str, Any]) -> Any:
+    if "references" in request:
+        return request.get("references")
+    return request.get("authorities", [])
+
+
 def validate_request(request: dict[str, Any], manifest: dict[str, Any]) -> list[str]:
     errors: list[str] = []
-    if request.get("schema_version") != REQUEST_SCHEMA:
-        errors.append(f"request.schema_version must be {REQUEST_SCHEMA}")
+    if request.get("schema_version") not in REQUEST_SCHEMAS:
+        errors.append(f"request.schema_version must be one of {sorted(REQUEST_SCHEMAS)}")
 
     mode = request.get("mode", "FRESH")
-    if mode not in {"FRESH", "STAGED_RESTYLE"}:
-        errors.append("request.mode must be FRESH or STAGED_RESTYLE")
+    if mode not in {"FRESH", "EDIT"}:
+        errors.append("request.mode must be FRESH or EDIT")
 
     scene = request.get("scene")
     if not isinstance(scene, str) or not scene.strip():
         errors.append("request.scene must be a non-empty string")
 
-    authorities = request.get("authorities", [])
-    if not isinstance(authorities, list):
-        errors.append("request.authorities must be an array")
+    references = _request_references(request)
+    if not isinstance(references, list):
+        errors.append("request.references must be an array")
         return errors
-    if len(authorities) > REFERENCE_SLOT_LIMIT:
-        errors.append(f"request uses {len(authorities)} authorities; limit is {REFERENCE_SLOT_LIMIT}")
+    if len(references) > REFERENCE_SLOT_LIMIT:
+        errors.append(f"request uses {len(references)} references; limit is {REFERENCE_SLOT_LIMIT}")
 
     known = manifest.get("authorities", {})
-    seen_ids: set[str] = set()
+    seen_keys: set[str] = set()
     claimed_properties: dict[str, str] = {}
 
-    for index, ref in enumerate(authorities):
-        prefix = f"request.authorities[{index}]"
+    for index, ref in enumerate(references):
+        prefix = f"request.references[{index}]"
         if not isinstance(ref, dict):
             errors.append(f"{prefix} must be an object")
             continue
-        authority_id = ref.get("id")
-        if not isinstance(authority_id, str) or authority_id not in known:
-            errors.append(f"{prefix}.id is not present in the authority manifest")
-            continue
-        if authority_id in seen_ids:
-            errors.append(f"duplicate authority reference: {authority_id}")
-            continue
-        seen_ids.add(authority_id)
 
-        declared_role = known[authority_id].get("role")
-        requested_role = ref.get("role", declared_role)
-        if requested_role != declared_role:
-            errors.append(
-                f"{authority_id} requested as {requested_role}, but manifest role is {declared_role}"
-            )
+        source = ref.get("source", "PROJECT_AUTHORITY")
+        if source not in ALLOWED_SOURCES:
+            errors.append(f"{prefix}.source must be one of {sorted(ALLOWED_SOURCES)}")
+            continue
+
+        authority_id = ref.get("id")
+        role = ref.get("role")
+        allowed: set[str]
+        forbidden: set[str]
+
+        if source == "PROJECT_AUTHORITY":
+            if not isinstance(authority_id, str) or authority_id not in known:
+                errors.append(f"{prefix}.id is not present in the authority manifest")
+                continue
+            declared_role = known[authority_id].get("role")
+            if role is None:
+                role = declared_role
+            if role != declared_role:
+                errors.append(f"{authority_id} requested as {role}, but manifest role is {declared_role}")
+            allowed = set(known[authority_id].get("allowed_influence", []))
+            forbidden = set(known[authority_id].get("forbidden_influence", []))
+            unique_key = f"project:{authority_id}"
+        else:
+            if role not in ALLOWED_ROLES:
+                errors.append(f"{prefix}.role must be one of {sorted(ALLOWED_ROLES)} for inline references")
+                continue
+            if not isinstance(authority_id, str) or not authority_id.strip():
+                errors.append(f"{prefix}.id must be a non-empty ephemeral ID for inline references")
+                continue
+            allowed = DEFAULT_INLINE_ALLOWED[role]
+            forbidden = set()
+            unique_key = f"inline:{authority_id}"
+
+        if unique_key in seen_keys:
+            errors.append(f"duplicate reference: {authority_id}")
+            continue
+        seen_keys.add(unique_key)
 
         influence = ref.get("influence")
         if influence is not None:
@@ -158,38 +194,30 @@ def validate_request(request: dict[str, Any], manifest: dict[str, Any]) -> list[
             if influence_list is None:
                 errors.append(f"{prefix}.influence must be a string array when present")
             else:
-                allowed = set(known[authority_id].get("allowed_influence", []))
-                forbidden = set(known[authority_id].get("forbidden_influence", []))
                 for prop in influence_list:
                     if prop not in allowed:
                         errors.append(f"{authority_id} is not allowed to control {prop!r}")
                     if prop in forbidden:
                         errors.append(f"{authority_id} explicitly forbids control of {prop!r}")
                     prior = claimed_properties.get(prop)
-                    if prior is not None and prior != authority_id:
-                        errors.append(
-                            f"authority conflict for {prop!r}: {prior} and {authority_id} both claim it"
-                        )
-                    claimed_properties[prop] = authority_id
+                    if prior is not None and prior != unique_key:
+                        errors.append(f"authority conflict for {prop!r}: {prior} and {unique_key} both claim it")
+                    claimed_properties[prop] = unique_key
 
-    forbidden_fresh_fields = ("prior_candidate", "edit_target", "patch", "layer_composite")
-    if mode == "FRESH" and any(request.get(key) for key in forbidden_fresh_fields):
-        errors.append("fresh generation cannot include a prior candidate or generative edit target")
+    edit_target = request.get("edit_target")
+    if mode == "FRESH" and edit_target:
+        errors.append("fresh generation cannot include an edit target")
+    if mode == "EDIT" and (not isinstance(edit_target, str) or not edit_target.strip()):
+        errors.append("edit mode requires a non-empty edit_target")
 
-    if mode == "STAGED_RESTYLE":
-        if request.get("explicit_opt_in") is not True:
-            errors.append("staged restyle requires explicit_opt_in=true")
-        edit_target = request.get("edit_target")
-        if not isinstance(edit_target, str) or not edit_target.strip():
-            errors.append("staged restyle requires a non-empty edit_target")
-        style_refs = [
-            ref for ref in authorities
-            if isinstance(ref, dict)
-            and ref.get("id") in known
-            and known[ref["id"]].get("role") == "STYLE"
-        ]
-        if len(style_refs) > 1:
-            errors.append("staged restyle allows at most one STYLE authority")
+    source_profile = request.get("source_profile")
+    if source_profile is not None and (not isinstance(source_profile, str) or not source_profile.strip()):
+        errors.append("request.source_profile must be a non-empty string when present")
+
+    for field in ("composition", "lighting", "preserve", "avoid"):
+        value = request.get(field, [])
+        if value is not None and _string_list(value) is None:
+            errors.append(f"request.{field} must be a string array when present")
 
     return errors
 

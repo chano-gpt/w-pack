@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wpack-web-harness"
-version = "0.2.0"
-description = "ChatGPT web and Projects image-generation control harness"
+version = "0.3.0"
+description = "ChatGPT chat-native reference control harness for image generation and editing"
 requires-python = ">=3.11"
 
 # The upstream src/zpack package is retained only for provenance during the

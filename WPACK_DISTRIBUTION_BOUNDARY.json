@@ -1,0 +1,9 @@
+{
+  "schema_version": "WPACK_DISTRIBUTION_BOUNDARY_v1.0",
+  "included": ["skill", "project", "PACK_SPEC.json", "README.md", "QUICKSTART.md", "pyproject.toml", "LEGACY.md"],
+  "excluded_from_chatgpt_web_execution": ["src/zpack", "pack", "private-assets", "output"],
+  "authority_asset_policy": "USER_OR_PROJECT_SUPPLIED_REFERENCES_ONLY",
+  "inline_authority_policy": "CURRENT_CONVERSATION_IMAGES_ALLOWED_WITHOUT_MANIFEST",
+  "project_authority_policy": "OPTIONAL_MANIFEST_AND_SOURCE_PROFILES",
+  "generation_transport": "CHATGPT_BUILTIN_IMAGE_GENERATION"
+}

@@ -1,8 +1,8 @@
 {
-  "schema_version": "WPACK_SPEC_v1.0",
+  "schema_version": "WPACK_SPEC_v1.1",
   "display_name": "W-Pack",
   "pack_id": "WPACK",
-  "pack_version": "WPACK_v0.2.0-web",
+  "pack_version": "WPACK_v0.3.0-chat-native",
   "scope": "CHATGPT_WEB_PROJECT_IMAGE_GENERATION_HARNESS",
   "repository": "chano-gpt/w-pack",
   "reference_slot_limit": 5,
@@ -10,21 +10,18 @@
   "standalone_api_allowed": false,
   "api_key_required": false,
   "local_gpu_required": false,
-  "authority_roles": [
-    "STYLE",
-    "CHARACTER",
-    "POSE",
-    "PROPORTION",
-    "ITEM"
-  ],
-  "request_schema": "WPACK_GENERATION_REQUEST_v1.0",
-  "compiled_request_schema": "WPACK_COMPILED_REQUEST_v1.0",
+  "authority_roles": ["STYLE", "CHARACTER", "POSE", "COMPOSITION", "PROPORTION", "ITEM"],
+  "reference_sources": ["PROJECT_AUTHORITY", "INLINE_AUTHORITY"],
+  "request_schema": "WPACK_GENERATION_REQUEST_v1.1",
+  "compiled_request_schema": "WPACK_COMPILED_REQUEST_v1.1",
+  "generation_modes": ["FRESH", "EDIT"],
   "generation_policy": {
     "fresh_generation_default": true,
     "previous_candidate_reuse_default": false,
-    "staged_restyle_requires_explicit_opt_in": true,
-    "authority_scope_must_be_explicit": true,
-    "reference_conflicts_must_fail_closed": true
+    "inline_reference_manifest_required": false,
+    "authority_scope_must_be_explicit_or_resolved_from_user_language": true,
+    "reference_conflicts_must_fail_closed": true,
+    "project_source_profiles_supported": true
   },
   "validation": {
     "manifest_and_request_validator": "skill/scripts/validate_authorities.py",
