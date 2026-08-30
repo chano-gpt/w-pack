@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile a validated W-Pack request into a bounded image-generation brief."""
+"""Compile a validated chat-native W-Pack request into a bounded generation brief."""
 
 from __future__ import annotations
 
@@ -9,9 +9,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from validate_authorities import load_json, validate_manifest, validate_request
+from validate_authorities import DEFAULT_INLINE_ALLOWED, load_json, validate_manifest, validate_request
 
-COMPILED_SCHEMA = "WPACK_COMPILED_REQUEST_v1.0"
+COMPILED_SCHEMA = "WPACK_COMPILED_REQUEST_v1.1"
+
+
+def _references(request: dict[str, Any]) -> list[dict[str, Any]]:
+    return request.get("references", request.get("authorities", []))
 
 
 def compile_request(manifest: dict[str, Any], request: dict[str, Any]) -> dict[str, Any]:
@@ -22,39 +26,58 @@ def compile_request(manifest: dict[str, Any], request: dict[str, Any]) -> dict[s
         raise ValueError("; ".join(errors))
 
     known = manifest["authorities"]
-    compiled_authorities = []
-    for ref in request.get("authorities", []):
+    compiled_references = []
+    for ref in _references(request):
+        source = ref.get("source", "PROJECT_AUTHORITY")
         authority_id = ref["id"]
-        authority = known[authority_id]
-        influence = ref.get("influence") or authority["allowed_influence"]
-        compiled_authorities.append(
+        if source == "PROJECT_AUTHORITY":
+            authority = known[authority_id]
+            role = authority["role"]
+            allowed = ref.get("influence") or authority["allowed_influence"]
+            forbidden = authority["forbidden_influence"]
+            file_name = authority["file"]
+        else:
+            role = ref["role"]
+            allowed = ref.get("influence") or sorted(DEFAULT_INLINE_ALLOWED[role])
+            forbidden = []
+            file_name = ref.get("file")
+
+        compiled_references.append(
             {
                 "id": authority_id,
-                "file": authority["file"],
-                "role": authority["role"],
-                "allowed_influence": influence,
-                "forbidden_influence": authority["forbidden_influence"],
+                "source": source,
+                "file": file_name,
+                "role": role,
+                "allowed_influence": allowed,
+                "forbidden_influence": forbidden,
             }
         )
 
+    mode = request.get("mode", "FRESH")
     return {
         "schema_version": COMPILED_SCHEMA,
-        "mode": request.get("mode", "FRESH"),
+        "mode": mode,
         "scene": request["scene"].strip(),
         "aspect_ratio": request.get("aspect_ratio"),
+        "references": compiled_references,
+        "composition": request.get("composition", []),
+        "lighting": request.get("lighting", []),
         "exact_text": request.get("exact_text"),
-        "authorities": compiled_authorities,
+        "preserve": request.get("preserve", []),
+        "avoid": request.get("avoid", []),
+        "edit_target": request.get("edit_target") if mode == "EDIT" else None,
+        "edit_type": request.get("edit_type") if mode == "EDIT" else None,
+        "source_profile": request.get("source_profile"),
         "generation_constraints": {
             "use_chatgpt_builtin_image_generation": True,
             "maximum_reference_count": 5,
             "fresh_generation_default": True,
-            "do_not_infer_reference_roles": True,
+            "inline_references_do_not_require_manifest": True,
+            "resolve_roles_from_user_language_not_visual_incidence": True,
             "do_not_expand_authority_scope": True,
             "preserve_exact_text_when_present": True,
-            "do_not_reuse_prior_candidate_unless_mode_is_staged_restyle": True,
+            "do_not_reuse_prior_candidate_without_edit_intent": True,
         },
-        "edit_target": request.get("edit_target") if request.get("mode") == "STAGED_RESTYLE" else None,
-        "preserve": request.get("preserve", []) if request.get("mode") == "STAGED_RESTYLE" else [],
     }
 
 
