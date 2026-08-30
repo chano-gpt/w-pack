@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
 
 from compile_request import compile_request
@@ -25,40 +24,58 @@ def main() -> int:
     assert not errors, errors
 
     compiled = compile_request(manifest, request)
-    assert compiled["schema_version"] == "WPACK_COMPILED_REQUEST_v1.0"
+    assert compiled["schema_version"] == "WPACK_COMPILED_REQUEST_v1.1"
     assert compiled["mode"] == "FRESH"
-    assert len(compiled["authorities"]) == 3
+    assert len(compiled["references"]) == 3
+    assert compiled["references"][2]["source"] == "INLINE_AUTHORITY"
+    assert compiled["references"][2]["role"] == "COMPOSITION"
     assert compiled["generation_constraints"]["maximum_reference_count"] == 5
 
     bad_request = json.loads(json.dumps(request))
     bad_request["edit_target"] = "previous.png"
-    bad_request["authorities"][0]["influence"] = ["identity"]
-    bad_request["authorities"] = bad_request["authorities"] + [
-        bad_request["authorities"][0],
-        bad_request["authorities"][1],
-        bad_request["authorities"][2],
+    bad_request["references"][0]["influence"] = ["identity"]
+    bad_request["references"] = bad_request["references"] + [
+        bad_request["references"][0],
+        bad_request["references"][1],
+        bad_request["references"][2],
     ]
     errors = validate_request(bad_request, manifest)
     expected = (
         "limit is 5",
         "not allowed to control 'identity'",
         "forbids control of 'identity'",
-        "duplicate authority reference",
-        "fresh generation cannot include",
+        "duplicate reference",
+        "fresh generation cannot include an edit target",
     )
     for fragment in expected:
         assert any(fragment in error for error in errors), (fragment, errors)
 
-    staged = json.loads(json.dumps(request))
-    staged["mode"] = "STAGED_RESTYLE"
-    staged["edit_target"] = "candidate.png"
-    staged["explicit_opt_in"] = True
-    staged["preserve"] = ["composition", "subject placement"]
-    errors = validate_request(staged, manifest)
+    edit_request = json.loads(json.dumps(request))
+    edit_request["mode"] = "EDIT"
+    edit_request["edit_target"] = "current-conversation-image"
+    edit_request["edit_type"] = "MODIFY"
+    edit_request["preserve"] = ["identity", "background", "composition"]
+    edit_request["references"] = [
+        {
+            "source": "INLINE_AUTHORITY",
+            "id": "INLINE_ITEM_01",
+            "role": "ITEM",
+            "influence": ["item_identity", "silhouette"]
+        }
+    ]
+    errors = validate_request(edit_request, manifest)
     assert not errors, errors
-    compiled_staged = compile_request(manifest, staged)
-    assert compiled_staged["edit_target"] == "candidate.png"
-    assert compiled_staged["preserve"] == ["composition", "subject placement"]
+    compiled_edit = compile_request(manifest, edit_request)
+    assert compiled_edit["mode"] == "EDIT"
+    assert compiled_edit["edit_target"] == "current-conversation-image"
+    assert compiled_edit["edit_type"] == "MODIFY"
+    assert compiled_edit["preserve"] == ["identity", "background", "composition"]
+
+    profile_request = json.loads(json.dumps(request))
+    profile_request["source_profile"] = "DEFAULT"
+    errors = validate_request(profile_request, manifest)
+    assert not errors, errors
+    assert compile_request(manifest, profile_request)["source_profile"] == "DEFAULT"
 
     print("W-Pack self-test: PASS")
     return 0
