@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./assets/w-pack-hero.webp" alt="W-Pack — Reference-bounded image generation for ChatGPT" width="100%" />
+</p>
+
 <div align="center">
 
 # W-Pack
