@@ -1,40 +1,27 @@
 {
-  "schema_version": "WPACK_GENERATION_REQUEST_v1.0",
+  "schema_version": "WPACK_GENERATION_REQUEST_v1.1",
   "mode": "FRESH",
-  "scene": "A premium editorial fashion portrait in a brutalist concrete interior with late-afternoon directional sunlight, medium-full shot.",
+  "scene": "A premium editorial fashion portrait in a brutalist concrete interior with late-afternoon directional sunlight.",
   "aspect_ratio": "4:5",
-  "exact_text": null,
-  "authorities": [
+  "references": [
     {
+      "source": "PROJECT_AUTHORITY",
       "id": "STYLE_CORE_01",
       "role": "STYLE",
-      "influence": [
-        "palette",
-        "texture",
-        "lighting_language",
-        "graphic_treatment",
-        "rendering_language"
-      ]
+      "influence": ["palette", "texture", "lighting_language", "rendering_language"]
     },
     {
-      "id": "CHARACTER_01",
-      "role": "CHARACTER",
-      "influence": [
-        "identity",
-        "facial_features",
-        "hair",
-        "stable_appearance"
-      ]
-    },
-    {
-      "id": "POSE_01",
-      "role": "POSE",
-      "influence": [
-        "body_arrangement",
-        "gesture",
-        "stance",
-        "camera_relative_orientation"
-      ]
+      "source": "INLINE_AUTHORITY",
+      "id": "INLINE_COMPOSITION_01",
+      "role": "COMPOSITION",
+      "influence": ["framing", "subject_placement", "negative_space"]
     }
-  ]
+  ],
+  "composition": ["medium-full shot"],
+  "lighting": ["late-afternoon directional sunlight"],
+  "exact_text": null,
+  "preserve": [],
+  "avoid": ["reference leakage outside assigned authority roles"],
+  "edit_target": null,
+  "source_profile": null
 }
