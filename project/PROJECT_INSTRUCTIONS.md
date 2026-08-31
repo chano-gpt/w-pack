@@ -1,44 +1,38 @@
 # W-Pack Project Instructions
 
-Use W-Pack for image-generation and image-editing requests in this Project.
+Use W-Pack for image generation and image editing in this Project.
 
-## Source-first behavior
+## Default sources
 
 Persistent Project sources are the primary reference path and are active by default.
 
-- Automatically activate manifest `default_source_profile` for each W-Pack request.
-- If no explicit default is set but a profile named `DEFAULT` exists, activate `DEFAULT`.
-- The user does not need to repeat "use the sources" on every request.
-- Disable automatic Project sources only when the user explicitly asks to ignore references or generate from the prompt alone.
-- Treat current-chat image attachments as optional per-request overrides or additions, not as the main workflow.
+- Activate manifest `default_source_profile` automatically.
+- If no explicit default is set but `DEFAULT` exists, activate `DEFAULT`.
+- Do not require the user to repeat "use the sources".
+- Treat current-chat images as temporary overrides or additions.
+- Disable Project sources only when the user explicitly requests prompt-only generation or no references.
 
-## Reference authority
+## Authority roles
 
-Every active reference has a bounded role:
+Keep references bounded as STYLE, CHARACTER, POSE, COMPOSITION, PROPORTION, or ITEM.
 
-- `STYLE`: visual medium, rendering language, palette, texture, lighting language, surface treatment, stylization level, and degree of realism.
-- `CHARACTER`: identity and stable appearance.
-- `POSE`: pose and body arrangement.
-- `COMPOSITION`: framing, crop, camera angle, placement, hierarchy, and negative space.
-- `PROPORTION`: relative physical scale.
-- `ITEM`: specified object identity and structure.
+When exactly one STYLE is active, treat it internally as `STYLE_CORE`. STYLE_CORE controls global visual grammar but not identity, exact pose, exact composition, item identity, or unrelated scene content.
 
-When an explicit per-request or inline reference claims a role already supplied by the default profile, replace the default authority for that role unless the user clearly asks to combine them. Keep the other default Project authorities active.
+Preserve STYLE_CORE medium, stylization level, contour/edge behavior, shape abstraction, shading/value structure, color behavior, texture/surface treatment, background rendering, and degree of realism.
 
-## Style fidelity
+Do not let camera or lens terminology turn a non-photographic STYLE_CORE into generic photorealism unless the user explicitly asks for photography or photorealism.
 
-An active STYLE authority is a strong visual anchor. Preserve its visual medium, rendering language, stylization level, texture behavior, edge treatment, color behavior, and degree of realism.
+## Web workflow
 
-Do not normalize stylized, illustrated, painted, anime-like, graphic, print-like, collage-like, 3D, or other non-photographic STYLE sources into generic photorealism unless the user explicitly requests photography or photorealism.
+For a new image:
 
-Photographic terms such as camera brand, focal length, telephoto, depth of field, or camera angle control optical behavior and composition. They do not override the STYLE medium by themselves.
+1. Generate one FRESH candidate from the normal Project sources.
+2. Audit structure and style separately.
+3. If structure passes and style fails, perform exactly one style-only recovery edit.
+4. In recovery, use only the fresh candidate as `STRUCTURE_EDIT_TARGET` and STYLE_CORE as the sole style authority.
+5. Preserve content, identity, pose, composition, camera, spatial relationships, object count/contact, scene conditions, and exact text.
+6. Never recursively restyle and never perform an automatic third image-generation pass.
 
-## Generation behavior
+Do not use the recovery pass to fix structural failures. A later retry must restart from a fresh chain.
 
-Resolve mode as `FRESH` for new images and `EDIT` for modification of a usable existing target.
-
-Before generating, internally separate scene intent, Project source authorities, inline overrides, composition, lighting, exact text, preserve constraints, avoid constraints, and edit target.
-
-Use no more than five active references after default-profile expansion and overrides.
-
-Use ChatGPT's built-in image-generation capability. Do not ask for an API key, Codex OAuth, or a local image-generation runtime.
+Use ChatGPT built-in image generation. Do not ask for an API key, Codex OAuth, or local GPU runtime.

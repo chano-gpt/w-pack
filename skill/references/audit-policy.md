@@ -1,16 +1,43 @@
 # Audit Policy
 
-Review the generated candidate against the compiled request and active authority scopes.
+Audit generated candidates silently unless a material failure must be surfaced.
 
-## Required axes
+## Fresh candidate audit
 
-1. Scene compliance: required subject, environment, framing, lighting, and exact text are present.
-2. Project-source fidelity: active default Project authorities visibly influence the properties they control.
-3. Style-medium fidelity: when STYLE is active, the output preserves the reference medium, stylization level, rendering language, and degree of realism unless the user explicitly requested a medium change.
-4. Leakage: incidental identity, pose, objects, text, background, or composition from references did not leak outside authorized roles.
-5. Structural quality: anatomy, perspective, object relationships, cropping, and scale are coherent enough for the requested use.
-6. Freshness: a fresh run does not inherit unrelated artifacts from a previous candidate.
+Evaluate two independent statuses.
 
-Treat unintended conversion of a stylized STYLE reference into generic photorealism as a material failure.
+### Structure status
 
-Do not burden the user with a verbose audit when the candidate passes. Surface only defects that materially affect the requested result.
+Set `PASS` only when the requested subject/content, pose, composition, camera, spatial relationships, object count, scale/contact, scene conditions, and exact text requirements are materially acceptable.
+
+### Style status
+
+Compare the output with STYLE_CORE across these fingerprint axes:
+
+1. visual medium / rendering domain
+2. degree of realism
+3. contour and edge grammar
+4. shape and feature abstraction
+5. shading and value structure
+6. color behavior
+7. texture and surface treatment
+8. background simplification/rendering behavior
+
+Set style to `FAIL` immediately for a visual-medium class mismatch or non-photographic-to-generic-photoreal drift. Otherwise treat clear drift across at least three fingerprint axes as material style failure.
+
+## Recovery decision
+
+- Structure PASS + Style PASS -> finish.
+- Structure PASS + Style FAIL + singular STYLE_CORE -> `SINGLE_RESTYLE` once.
+- Structure FAIL -> do not restyle; automatic chain ends.
+- Ambiguous/multiple STYLE authorities -> do not guess a recovery core; automatic chain ends.
+
+## Recovery candidate audit
+
+Check:
+
+- STYLE_CORE fidelity improved materially.
+- Structure target identity/content/geometry remained intact.
+- No crop/recompose/object/content leakage occurred.
+
+Never run another automatic restyle or a third image-generation pass.

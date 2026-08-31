@@ -1,59 +1,38 @@
 # Generation Policy
 
-## Compile before generation
+## First pass
 
-Before image generation, internally compile scene, aspect ratio, resolved Project profile, references and bounded authority scopes, composition, lighting, exact text, preserve constraints, avoid constraints, generation mode, and edit target when editing.
+Compile and generate one fresh candidate first. Do not perform two image-generation passes by default.
 
-## Persistent sources are default
+Resolve persistent sources before optional inline references. Resolve a singular STYLE authority as STYLE_CORE when possible.
 
-Resolve the Project source profile before resolving optional inline references.
+## STYLE_CORE contract
 
-- If `use_default_sources` is false, skip automatic Project sources.
-- Otherwise use an explicitly requested `source_profile` when present.
-- Otherwise use manifest `default_source_profile`.
-- Otherwise use a profile named `DEFAULT` when one exists.
+Preserve the STYLE_CORE global visual grammar, including medium, stylization level, contour behavior, abstraction, shading/value structure, color behavior, texture, background rendering, and degree of realism.
 
-Current-chat images are not the primary reference path. Treat them as explicit overrides or add-ons only when the user points to them or clearly assigns an influence.
+Do not convert a non-photographic STYLE_CORE into generic photorealism unless explicitly requested.
 
-When an explicit reference claims a role already supplied by the active Project profile, the explicit reference replaces the default authority for that role unless the user clearly requests additive combination.
+Treat camera brand, focal length, telephoto, depth of field, low angle, or high angle as optical/composition instructions, not as a medium override.
 
-## Style fidelity
+## Freshness
 
-An active `STYLE` authority defines the visual medium and rendering domain within its scope. Preserve palette, texture, lighting language, graphic treatment, rendering language, surface treatment, visual medium, stylization level, edge treatment, and degree of realism when those influences are authorized.
-
-Do not convert a non-photographic STYLE reference into generic photorealism unless the user explicitly requests a photographic rendering style.
-
-Photographic vocabulary such as camera brand, focal length, telephoto, depth of field, low angle, or high angle controls optical behavior, perspective, or composition. It does not change the reference medium by itself.
-
-Default STYLE generation constraints:
-
-- style fidelity: HIGH
-- medium lock: REFERENCE
-- photorealism normalization: DISABLED
-
-## Fresh generation
-
-`FRESH` is the default mode for new images and remakes. Do not silently use a previous generated candidate as an input.
-
-## Edit generation
-
-Use `EDIT` only when a usable existing target image is present and the user asks to modify, preserve, refine, restyle, continue, or recompose it. Read `edit-policy.md`.
+`FRESH` means create a completely new integrated candidate from approved active authorities. Do not reuse prior generated candidates as hidden style inputs.
 
 ## Reference selection
 
-- Maximum 5 active generation references after default-profile expansion and explicit overrides.
-- Prefer the configured persistent Project profile over ad hoc inline references.
-- Do not add visually similar Project files merely because they appear relevant.
-- If a requested Project authority cannot be resolved, state what is missing instead of substituting another image.
+- Maximum five first-pass generation references.
+- Prefer the configured Project profile.
+- Do not add visually similar Project files merely because they look relevant.
+- Do not substitute missing named authorities.
 
 ## Composition
 
-Keep composition independent from STYLE. When the user requests framing, crop, camera angle, subject placement, hierarchy, negative space, or layout structure, use a COMPOSITION authority or direct composition constraints.
+Keep composition independent from STYLE_CORE. User camera/framing instructions can modify layout while STYLE_CORE continues to control rendering grammar.
 
 ## Text
 
-When exact text is specified, preserve spelling, capitalization, punctuation, and line content exactly.
+Preserve exact text spelling, capitalization, punctuation, and requested line content.
 
-## Preservation and avoidance
+## Recovery handoff
 
-Compile explicit keep/preserve language into `preserve`. Compile explicit negative constraints into `avoid`. In EDIT mode, a request to change only one property is not permission to redesign unrelated properties.
+After the fresh candidate, use `audit-policy.md`. Invoke `style-recovery-policy.md` only when structure passes and style fails.

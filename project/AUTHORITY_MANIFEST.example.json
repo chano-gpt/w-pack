@@ -8,7 +8,13 @@
     "STYLE_CORE_01": {
       "file": "STYLE_CORE_01.png",
       "role": "STYLE",
-      "allowed_influence": ["palette", "texture", "lighting_language", "graphic_treatment", "rendering_language", "surface_treatment", "visual_medium", "stylization_level", "edge_treatment", "degree_of_realism"],
+      "allowed_influence": [
+        "palette", "texture", "lighting_language", "graphic_treatment",
+        "rendering_language", "surface_treatment", "visual_medium",
+        "stylization_level", "edge_treatment", "shape_abstraction",
+        "value_structure", "color_behavior", "background_rendering",
+        "degree_of_realism"
+      ],
       "forbidden_influence": ["identity", "pose", "composition", "item_identity"]
     },
     "CHARACTER_01": {

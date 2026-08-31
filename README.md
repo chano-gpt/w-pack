@@ -1,272 +1,147 @@
 <p align="center">
-  <img src="./assets/w-pack-hero.webp" alt="W-Pack — Reference-bounded image generation for ChatGPT" width="100%" />
+  <img src="./assets/w-pack-hero.webp" alt="W-Pack — Project-source-first image generation for ChatGPT" width="100%" />
 </p>
 
 <div align="center">
 
 # W-Pack
 
-### Reference-bounded image generation for ChatGPT
+### Project-source-first image generation for ChatGPT
 
-**Use reference images naturally without letting them silently control everything.**
+**Persistent references by default. Bounded authorities. Conditional style recovery when the first pass drifts.**
 
-[![Version](https://img.shields.io/badge/version-v0.3.0-111111?style=flat-square)](#project-status)
+[![Version](https://img.shields.io/badge/version-v0.4.0-111111?style=flat-square)](#project-status)
 [![ChatGPT](https://img.shields.io/badge/ChatGPT-Web%20%26%20Projects-111111?style=flat-square)](#quick-start)
 [![Skill](https://img.shields.io/badge/ChatGPT-Skill-111111?style=flat-square)](./skill)
 [![No API Key](https://img.shields.io/badge/API%20key-not%20required-111111?style=flat-square)](#how-it-works)
 
 **English** · [한국어](./README.ko.md) · [日本語](./README.ja.md) · [简体中文](./README.zh-CN.md) · [繁體中文](./README.zh-TW.md) · [Español](./README.es.md) · [Português (Brasil)](./README.pt-BR.md) · [Français](./README.fr.md) · [Deutsch](./README.de.md)
 
-[Quick start](#quick-start) · [How it works](#how-it-works) · [Authority model](#authority-model) · [Project setup](#chatgpt-project-setup) · [Architecture](#architecture)
-
 </div>
 
 ---
 
-W-Pack is a chat-native control layer for image generation and editing inside **ChatGPT Web, ChatGPT Projects, and ChatGPT Skills**.
+W-Pack is a ChatGPT-native control layer for image generation and editing. It adapts the core Z-Pack ideas—bounded visual authorities, fresh generation, fail-closed reference handling, and deliberate style control—to ChatGPT Web and Projects.
 
-Instead of turning every reference image into an unrestricted visual prompt, W-Pack gives each reference a bounded authority: style, character, pose, composition, proportion, or item identity.
+## What changed in v0.4
 
-You can still speak naturally:
+- **Project sources are the default** — reusable Project references are active without repeating “use the sources.”
+- **STYLE_CORE** — a singular active STYLE reference becomes the global visual-grammar anchor.
+- **Stronger style fidelity** — medium, realism level, contours, abstraction, shading/value, color, texture, and background rendering are protected.
+- **Conditional two-stage recovery** — W-Pack generates once first; only a structure-good/style-bad result may receive one style-only restyle.
+- **No recursive editing loop** — maximum restyle depth is one and there is no automatic third pass.
+- **Inline images stay secondary** — current-chat attachments are temporary overrides/add-ons, not the normal source path.
 
-```text
-Make it with the visual feel of the first image.
-Keep the person from the second image unchanged.
-Use the composition of the third image.
-In this image, keep the face and composition but change only the outfit.
-```
+## Why this workflow
 
-W-Pack resolves those instructions into explicit reference roles before ChatGPT generates the image.
+A one-shot multi-reference request is normally best on the web. Two-stage generation adds value only when the first image gets the scene and geometry right but drifts away from the intended style.
 
-> W-Pack does not replace ChatGPT image generation. It controls **how references are selected, scoped, preserved, and audited** before generation.
-
-## Showcase
-
-<p align="center">
-  <img src="./assets/showcase-samurai-portrait.png" width="31%" alt="W-Pack showcase portrait" />
-  <img src="./assets/showcase-samurai-action.png" width="31%" alt="W-Pack showcase action scene" />
-  <img src="./assets/showcase-fantasy-rider.png" width="31%" alt="W-Pack showcase fantasy scene" />
-</p>
-
-<p align="center"><sub>Example outputs included for project presentation. Showcase images are not automatically used as authorities.</sub></p>
-
-## Why W-Pack?
-
-A normal multi-reference image request is ambiguous. If you attach three images, the model can unintentionally borrow the wrong person's face, the wrong framing, incidental objects, or unrelated styling.
-
-W-Pack separates those concerns.
-
-| Without W-Pack | With W-Pack |
-| --- | --- |
-| “Make it like this” can mean almost anything | Each reference gets a specific authority |
-| A style reference may leak identity or composition | Style cannot silently control identity or layout |
-| Previous outputs may become accidental references | Fresh generation is the default |
-| Attached images need manual prompt bookkeeping | Current-chat images work as inline authorities |
-| Complex reference prompts become JSON-like | Natural language stays natural |
-
-## Highlights
-
-- **Chat-native reference control** — use natural phrases such as “use this style,” “keep this person,” “use this pose,” or “use this composition.”
-- **Inline references** — images attached in the current conversation do not need a manifest entry.
-- **Six bounded authority roles** — `STYLE`, `CHARACTER`, `POSE`, `COMPOSITION`, `PROPORTION`, and `ITEM`.
-- **Fresh vs edit semantics** — new generation and modification of an existing image are treated differently.
-- **Project source profiles** — reusable reference sets can be activated with short requests.
-- **Deterministic validation** — optional scripts catch authority conflicts and invalid requests before generation.
-
-## Quick start
-
-### 1. Install the Skill
-
-Upload or install the contents of [`skill/`](./skill) as a ChatGPT Skill.
-
-For a packaged Skill, use the validated `skill.zip` generated from this directory.
-
-### 2. Use it directly in chat
-
-Attach one or more reference images and say what each image should influence.
+W-Pack therefore uses:
 
 ```text
-@W-Pack
-
-Use the first image for style only.
-Keep the person from the second image unchanged.
-Use the composition of the third image.
-
-Background: sunset interior with soft natural light.
-Aspect ratio: 4:5.
-Generate a fresh image.
+Project DEFAULT sources
+        ↓
+   FRESH generation
+        ↓
+ structure/style audit
+     /          \
+  PASS       style FAIL
+   ↓              ↓
+ DONE       SINGLE RESTYLE
+               ↓
+          final audit / stop
 ```
 
-No JSON. No local CLI. No API key.
+`SINGLE_RESTYLE` uses only:
 
-### 3. Or configure a reusable Project
+1. the fresh candidate as `STRUCTURE_EDIT_TARGET` — content and geometry authority only;
+2. the selected `STYLE_CORE` — sole rendering-style authority.
 
-For persistent references, copy [`project/PROJECT_INSTRUCTIONS.md`](./project/PROJECT_INSTRUCTIONS.md) into a ChatGPT Project and use [`project/AUTHORITY_MANIFEST.example.json`](./project/AUTHORITY_MANIFEST.example.json) as a starting point.
-
-See [`QUICKSTART.md`](./QUICKSTART.md) for the compact setup path.
+It does not feed CHARACTER, POSE, COMPOSITION, PROPORTION, or ITEM references into the recovery edit.
 
 ## Authority model
 
-Every active generation reference receives one primary role.
-
 | Role | Controls | Does not control by default |
 | --- | --- | --- |
-| `STYLE` | palette, texture, lighting language, rendering, graphic treatment | identity, pose, exact composition, item identity |
-| `CHARACTER` | identity, face, hair, stable appearance | background, lighting, layout, unrelated items |
-| `POSE` | body arrangement, gesture, stance, orientation | identity, wardrobe, environment, style |
-| `COMPOSITION` | framing, crop, camera angle, placement, hierarchy, negative space | identity, wardrobe, item identity, global style |
-| `PROPORTION` | body/object scale and relative dimensions | identity, detailed pose, style |
-| `ITEM` | object identity, silhouette, key structure | character identity, environment, global style |
-
-The core rule is simple:
+| `STYLE` / internal `STYLE_CORE` | visual medium, rendering grammar, palette, texture, abstraction, value/shading, degree of realism | identity, exact pose, exact composition, item identity |
+| `CHARACTER` | identity, face, hair, stable appearance | global style, layout, environment |
+| `POSE` | body arrangement, gesture, stance | identity, environment, global style |
+| `COMPOSITION` | framing, crop, camera angle, placement, hierarchy | identity, global style, item identity |
+| `PROPORTION` | relative physical scale | identity, detailed pose, global style |
+| `ITEM` | object identity, silhouette, structure | character identity, environment, global style |
 
 > **Visible does not mean authorized.**
 
-An incidental property in a reference image must not silently become part of the output.
+## STYLE_CORE
 
-Detailed semantics live in [`skill/references/authority-model.md`](./skill/references/authority-model.md).
+When exactly one STYLE authority is active, W-Pack treats it as `STYLE_CORE` internally.
 
-## Natural-language resolution
+The core controls global visual grammar: medium, realism level, edge language, shape abstraction, shading/value structure, color behavior, surface treatment, and background rendering. Photographic terms such as “85mm”, “telephoto”, or “low angle” affect optical behavior and composition; they do not automatically turn an illustration into a photograph.
 
-W-Pack maps explicit chat intent to authority roles.
+## Project sources first
 
-```text
-“Use this visual feel”          -> STYLE
-“Keep this person”              -> CHARACTER
-“Use this pose”                 -> POSE
-“Use this composition”          -> COMPOSITION
-“Keep this product exactly”     -> ITEM
-“Change only ... in this image” -> EDIT
-“Generate a new image”          -> FRESH
-```
-
-W-Pack may infer a role from what the user **says**, but not merely from what happens to be visible inside an image.
-
-See [`skill/references/chat-intent-resolution.md`](./skill/references/chat-intent-resolution.md).
-
-## Fresh and edit modes
-
-### `FRESH`
-
-Use for a new image or a remake driven by approved references.
-
-- Previous generated candidates are not silently reused.
-- Only currently selected references may influence the run.
-- This is the default when the user asks for a new image.
-
-### `EDIT`
-
-Use when the user explicitly wants to modify an existing image target.
-
-Internally, edits may be classified as `MODIFY`, `RESTYLE`, or `RECOMPOSE`. Users do not need to name these subtypes.
-
-## ChatGPT Project setup
-
-Project mode is useful when the same references are reused across many generations.
+A normal ChatGPT Project setup looks like:
 
 ```text
 ChatGPT Project
-├── Project instructions
 ├── reusable reference images
+├── Project instructions
 ├── authority manifest
-└── optional source profiles
+└── DEFAULT source profile
 ```
 
-A Project reference is never automatically active just because it exists in the Project. W-Pack selects only the references needed for the current request.
+The DEFAULT profile is active automatically. Current-chat attachments are used only when the user explicitly wants a temporary override or addition.
+
+## Quick start
+
+1. Install [`skill/`](./skill) or the packaged `skill.zip`.
+2. Copy [`project/PROJECT_INSTRUCTIONS.md`](./project/PROJECT_INSTRUCTIONS.md) into your ChatGPT Project.
+3. Configure [`project/AUTHORITY_MANIFEST.example.json`](./project/AUTHORITY_MANIFEST.example.json) with your reusable sources.
+4. Use natural-language image requests.
+
+See [`QUICKSTART.md`](./QUICKSTART.md).
 
 ## How it works
 
 ```text
-Natural chat request
+Natural request
   -> resolve FRESH vs EDIT
-  -> resolve reference roles
-  -> apply optional Project source profile
-  -> validate scopes and conflicts
-  -> compile scene / composition / lighting / text / preserve / avoid
+  -> activate DEFAULT Project profile
+  -> apply optional inline overrides
+  -> resolve bounded roles + singular STYLE_CORE
+  -> compile FRESH_FIRST request
   -> ChatGPT image generation
-  -> silent output audit
+  -> structure/style audit
+  -> optional SINGLE_RESTYLE on style-only failure
+  -> stop; never recursive-restyle automatically
 ```
 
-W-Pack prefers the minimum reference set required for the request and allows at most five generation references.
-
-## Architecture
-
-```text
-w-pack/
-├── skill/                         # distributable ChatGPT Skill
-│   ├── SKILL.md                   # control plane
-│   ├── agents/openai.yaml         # Skill UI metadata
-│   ├── scripts/
-│   │   ├── validate_authorities.py
-│   │   ├── compile_request.py
-│   │   └── self_test.py
-│   └── references/
-│       ├── authority-model.md
-│       ├── chat-intent-resolution.md
-│       ├── generation-policy.md
-│       ├── edit-policy.md
-│       ├── source-profiles.md
-│       ├── audit-policy.md
-│       └── project-setup.md
-│
-├── project/                       # optional ChatGPT Project templates
-│   ├── PROJECT_INSTRUCTIONS.md
-│   ├── AUTHORITY_MANIFEST.example.json
-│   └── GENERATION_REQUEST.example.json
-│
-├── PACK_SPEC.json                 # machine-readable harness contract
-├── QUICKSTART.md
-└── WPACK_DISTRIBUTION_BOUNDARY.json
-```
-
-The legacy `src/zpack`, `pack`, `private-assets`, and `output` paths are retained only for migration provenance and are not part of the ChatGPT Web execution path. See [`LEGACY.md`](./LEGACY.md).
+W-Pack allows at most five first-pass references.
 
 ## Validation
-
-Run:
 
 ```bash
 python3 skill/scripts/self_test.py
 ```
 
-Expected result:
+Expected:
 
 ```text
 W-Pack self-test: PASS
 ```
 
-## Design principles
-
-**Chat first.** Users should describe image work naturally instead of filling out schemas.
-
-**Bound references, not creativity.** The scene can remain open-ended while reference influence stays explicit.
-
-**Fresh by default.** Previous outputs never become hidden inputs to a new generation.
-
-**Fail closed on real conflicts.** If two references claim incompatible control over the same property, W-Pack should surface the conflict instead of guessing.
-
-**Audit quietly.** Successful generations should not be buried under verbose internal diagnostics.
-
 ## Project status
 
-`WPACK_v0.3.0-chat-native` is the current ChatGPT Web milestone.
+`WPACK_v0.4.0-chat-native` is the current ChatGPT Web milestone.
 
-This release focuses on inline conversation references, natural-language authority resolution, composition authority, FRESH / EDIT semantics, optional Project source profiles, and deterministic request validation and compilation.
+This version keeps the Z-Pack-inspired authority chain while adapting it to a chat-native environment: persistent sources replace repeated explicit ID selection, and Z-Pack's staged style idea becomes a conditional recovery rather than the default path.
 
 ## Repository map
 
 | Path | Purpose |
 | --- | --- |
-| [`skill/`](./skill) | installable Skill source |
-| [`project/`](./project) | reusable ChatGPT Project configuration |
-| [`QUICKSTART.md`](./QUICKSTART.md) | shortest setup path |
-| [`PACK_SPEC.json`](./PACK_SPEC.json) | W-Pack machine-readable specification |
-| [`LEGACY.md`](./LEGACY.md) | upstream migration boundary |
-
----
-
-<div align="center">
-
-**W-Pack** · Reference control for ChatGPT image generation
-
-</div>
+| [`skill/`](./skill) | installable ChatGPT Skill source |
+| [`project/`](./project) | ChatGPT Project setup templates |
+| [`PACK_SPEC.json`](./PACK_SPEC.json) | machine-readable W-Pack contract |
+| [`QUICKSTART.md`](./QUICKSTART.md) | setup guide |
+| [`LEGACY.md`](./LEGACY.md) | upstream runtime migration boundary |

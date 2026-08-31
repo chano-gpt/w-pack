@@ -1,22 +1,15 @@
 {
   "schema_version": "WPACK_GENERATION_REQUEST_v1.1",
   "mode": "FRESH",
-  "scene": "A new scene that keeps the persistent Project visual identity while changing the action and environment.",
+  "scene": "A new scene using the persistent Project character and visual grammar.",
   "aspect_ratio": "4:5",
   "use_default_sources": true,
-  "references": [
-    {
-      "source": "INLINE_AUTHORITY",
-      "id": "INLINE_COMPOSITION_01",
-      "role": "COMPOSITION",
-      "influence": ["framing", "subject_placement", "negative_space"]
-    }
-  ],
-  "composition": ["medium-full shot", "subject slightly off-center"],
-  "lighting": [],
+  "references": [],
+  "composition": ["low-angle medium-full shot"],
+  "lighting": ["clear noon sunlight"],
   "exact_text": null,
   "preserve": [],
-  "avoid": ["reference leakage outside assigned authority roles", "photorealistic normalization when the active STYLE reference is non-photographic"],
+  "avoid": ["reference leakage outside assigned authority roles"],
   "edit_target": null,
   "source_profile": null
 }

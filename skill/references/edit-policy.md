@@ -1,17 +1,15 @@
 # Edit Policy
 
-Use `EDIT` only when a usable target image exists and the user asks to modify, preserve, refine, restyle, continue, or recompose it.
+Use `EDIT` only when a usable target image exists and the user asks to modify, preserve, refine, restyle, or recompose it.
+
+User-requested EDIT is separate from W-Pack's automatic FRESH style-recovery path.
 
 ## Edit types
 
 - `MODIFY`: change selected properties while preserving the rest.
-- `RESTYLE`: preserve selected content or structure while changing visual language.
-- `RECOMPOSE`: preserve selected content while changing framing or layout.
+- `RESTYLE`: preserve requested content/structure while changing visual language.
+- `RECOMPOSE`: preserve requested content while changing framing/layout.
 
-## Project sources during edits
+Default Project sources remain active in ordinary user-requested EDIT unless explicitly disabled. Same-role inline references override the corresponding Project role for that request.
 
-The default Project source profile remains active during EDIT unless the user explicitly disables Project sources. Explicit edit instructions still have higher priority than Project defaults.
-
-If an inline reference is explicitly assigned to a role that also exists in the default Project profile, use the inline reference as the per-request override for that role unless the user requests combination.
-
-Do not treat an edit target itself as unrestricted authority over all properties. Preserve only what the user asked to preserve or what the edit type logically requires.
+Do not recursively edit without explicit user intent. A request to change one property is not permission to redesign unrelated properties.

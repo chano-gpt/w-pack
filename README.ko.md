@@ -1,107 +1,82 @@
-<p align="center">
-  <img src="./assets/w-pack-hero.webp" alt="W-Pack — ChatGPT용 참조 제어 이미지 생성" width="100%" />
-</p>
-
-<div align="center">
-
 # W-Pack
 
-### ChatGPT를 위한 Reference-bounded 이미지 생성
+### ChatGPT용 Project-source-first 이미지 생성 하네스
 
-**참조 이미지는 자연스럽게 활용하고, 영향 범위는 명확하게 제한합니다.**
+[English](./README.md) · **한국어** · [日本語](./README.ja.md) · [简体中文](./README.zh-CN.md) · [繁體中文](./README.zh-TW.md)
 
-[English](./README.md) · **한국어** · [日本語](./README.ja.md) · [简体中文](./README.zh-CN.md) · [繁體中文](./README.zh-TW.md) · [Español](./README.es.md) · [Português (Brasil)](./README.pt-BR.md) · [Français](./README.fr.md) · [Deutsch](./README.de.md)
+W-Pack v0.4는 ChatGPT Web/Projects 환경에서 Z-Pack의 핵심 원리인 **bounded authority, fresh generation, fail-closed reference control, style fidelity**를 채팅 방식에 맞게 적용합니다.
 
-</div>
+## v0.4 핵심 변경
 
----
+- Project `DEFAULT` 소스를 매 요청마다 자동 사용합니다.
+- 하나의 STYLE 소스를 내부적으로 `STYLE_CORE`로 사용합니다.
+- STYLE_CORE의 화풍, 표현 매체, 실사도, 윤곽선, 형태 추상화, 명암/색/질감 문법을 강하게 유지합니다.
+- 첫 생성은 항상 1회 FRESH로 시작합니다.
+- **구조는 성공했지만 스타일만 실패한 경우에만** 1회의 style-only restyle을 수행할 수 있습니다.
+- restyle을 연속 반복하지 않으며 자동 3차 생성도 하지 않습니다.
+- 채팅 첨부 이미지는 기본 소스가 아니라 임시 override/add-on입니다.
 
-W-Pack은 **ChatGPT Web, ChatGPT Projects, ChatGPT Skills**에서 이미지 생성과 편집 시 참조 이미지의 영향 범위를 제어하는 chat-native 레이어입니다.
-
-일반적인 멀티 레퍼런스 요청에서는 스타일 이미지의 인물, 구도, 배경 같은 요소가 의도치 않게 섞일 수 있습니다. W-Pack은 각 참조 이미지에 `STYLE`, `CHARACTER`, `POSE`, `COMPOSITION`, `PROPORTION`, `ITEM` 중 하나의 권한을 부여해 이런 누출을 줄입니다.
-
-```text
-첫 번째 이미지는 느낌만 참고해.
-두 번째 이미지의 인물은 그대로 유지해.
-세 번째 이미지 구도로 만들어.
-이 이미지에서 얼굴과 구도는 유지하고 옷만 바꿔.
-```
-
-사용자는 JSON이나 manifest ID를 직접 작성할 필요가 없습니다.
-
-## 핵심 기능
-
-- **자연어 기반 참조 제어** — “이 느낌으로”, “이 사람 그대로”, “이 포즈로”, “이 구도로” 같은 표현을 해석합니다.
-- **Inline reference** — 현재 채팅에 첨부한 이미지는 manifest 없이 바로 사용할 수 있습니다.
-- **6개 Authority role** — `STYLE`, `CHARACTER`, `POSE`, `COMPOSITION`, `PROPORTION`, `ITEM`.
-- **FRESH / EDIT 구분** — 새 이미지 생성과 기존 이미지 수정 요청을 다르게 처리합니다.
-- **Project source profile** — 반복적으로 사용하는 참조 세트를 짧은 요청으로 활성화할 수 있습니다.
-- **검증 스크립트** — 권한 충돌, 중복 참조, 잘못된 편집 요청 등을 사전에 검사합니다.
-
-## 빠른 시작
-
-1. [`skill/`](./skill) 폴더를 ChatGPT Skill로 설치하거나 업로드합니다.
-2. 이미지 하나 이상을 첨부합니다.
-3. 각 이미지가 무엇을 담당해야 하는지 자연어로 말합니다.
+## 기본 흐름
 
 ```text
-@W-Pack
-
-첫 번째 이미지는 스타일만 참고.
-두 번째 이미지의 인물은 그대로 유지.
-세 번째 이미지 구도로 새 이미지 만들어.
-
-배경은 노을진 실내, 부드러운 자연광.
-4:5 세로 비율.
+Project DEFAULT 소스
+        ↓
+     FRESH 생성
+        ↓
+  구조 / 스타일 감사
+     /          \
+  통과        스타일 실패
+   ↓              ↓
+ 종료       SINGLE RESTYLE
+                  ↓
+              최종 감사 후 종료
 ```
 
-API Key, 로컬 CLI, 별도 이미지 API는 필요하지 않습니다.
+2단계는 기본값이 아닙니다. 첫 이미지의 인물, 포즈, 구도, 장면은 잘 나왔지만 화풍이 STYLE_CORE에서 크게 벗어난 경우에만 사용합니다.
 
-## Authority model
+## STYLE_CORE
 
-| Role | 제어하는 요소 | 기본적으로 제어하지 않는 요소 |
-| --- | --- | --- |
-| `STYLE` | 색감, 질감, 조명 언어, 렌더링, 그래픽 처리 | 인물 정체성, 포즈, 정확한 구도, 제품 정체성 |
-| `CHARACTER` | 인물 정체성, 얼굴, 헤어, 안정적인 외형 | 배경, 조명, 레이아웃, 관련 없는 오브젝트 |
-| `POSE` | 신체 배치, 제스처, 자세, 방향 | 인물 정체성, 의상, 환경, 스타일 |
-| `COMPOSITION` | 프레이밍, 크롭, 카메라 각도, 배치, 여백 | 인물 정체성, 의상, 제품 정체성, 전체 스타일 |
-| `PROPORTION` | 신체/오브젝트 비율과 상대적 크기 | 인물 정체성, 세부 포즈, 스타일 |
-| `ITEM` | 제품/오브젝트 정체성, 실루엣, 구조 | 인물 정체성, 환경, 전체 스타일 |
+STYLE_CORE는 전체 이미지의 visual grammar를 담당합니다.
 
-핵심 규칙은 하나입니다.
+- visual medium / rendering domain
+- 실사도와 stylization level
+- 윤곽선과 edge 처리
+- 형태와 얼굴 특징의 추상화 방식
+- 명암과 value 구조
+- 색 사용 방식
+- 질감과 표면 표현
+- 배경 단순화/렌더링 방식
 
-> **보인다고 해서 허용된 것은 아닙니다.**
+`85mm`, `망원`, `Canon`, `low angle`, `depth of field` 같은 표현은 렌즈/구도/광학적 특성으로 처리합니다. STYLE_CORE가 비실사 화풍이면 이런 표현만으로 실사 사진으로 바꾸지 않습니다.
 
-참조 이미지에 우연히 포함된 요소는 해당 Authority가 허용하지 않는 한 결과물에 영향을 주지 않아야 합니다.
+## 1회 스타일 복구
 
-## FRESH와 EDIT
+FRESH 결과에서:
 
-### `FRESH`
-새 이미지를 만들거나 참조를 기반으로 다시 생성할 때 사용합니다. 이전 생성물은 자동으로 재사용되지 않습니다.
+- 구조 PASS
+- 스타일 FAIL
+- STYLE_CORE 1개 존재
 
-### `EDIT`
-기존 이미지의 일부를 수정·유지·재스타일·재구성할 때 사용합니다. 내부적으로 `MODIFY`, `RESTYLE`, `RECOMPOSE`로 분류될 수 있지만 사용자가 직접 지정할 필요는 없습니다.
+조건이 모두 맞을 때만 복구합니다.
 
-## ChatGPT Project 사용
+복구 단계에는 두 이미지 역할만 사용합니다.
 
-반복해서 사용하는 참조 이미지가 있다면 ChatGPT Project에 저장하고 [`project/PROJECT_INSTRUCTIONS.md`](./project/PROJECT_INSTRUCTIONS.md)를 Project instructions에 적용할 수 있습니다.
+1. 방금 생성한 이미지 = `STRUCTURE_EDIT_TARGET` — 내용·구조만 담당
+2. STYLE_CORE = 유일한 스타일 authority
 
-Project 파일은 존재한다고 자동 사용되지 않습니다. W-Pack은 현재 요청에 필요한 최소 참조만 선택합니다.
+인물 정체성, 포즈, 구도, 카메라, 공간 관계, 물체 수/접촉, 장면 조건, 텍스트는 보존하고 렌더링 스타일만 변경합니다.
 
-## 동작 흐름
+구조 자체가 실패한 이미지는 restyle로 고치지 않습니다. 다음 재시도는 다시 FRESH부터 시작해야 합니다.
 
-```text
-자연어 요청
-  -> FRESH / EDIT 판별
-  -> 참조 이미지와 Authority role 해석
-  -> 선택적 Source Profile 적용
-  -> 충돌 및 범위 검증
-  -> scene / composition / lighting / text / preserve / avoid 컴파일
-  -> ChatGPT 이미지 생성
-  -> 결과 감사(audit)
-```
+## 설치 및 Project 설정
 
-한 번의 생성에 최대 5개의 참조 이미지를 사용하며, 가능한 최소 개수를 우선합니다.
+1. `skill.zip`을 ChatGPT Skills에 업로드합니다.
+2. Project에 반복 사용할 소스 이미지를 넣습니다.
+3. `project/PROJECT_INSTRUCTIONS.md`를 Project instructions에 적용합니다.
+4. `project/AUTHORITY_MANIFEST.example.json`을 기준으로 `DEFAULT` profile을 정의합니다.
+5. 일반적으로 `DEFAULT`에는 STYLE 하나를 두어 STYLE_CORE로 사용합니다.
+
+이후에는 매 프롬프트마다 "소스 참고해서"라고 쓰지 않아도 됩니다.
 
 ## 검증
 
@@ -115,6 +90,4 @@ python3 skill/scripts/self_test.py
 W-Pack self-test: PASS
 ```
 
-## 현재 상태
-
-현재 버전은 `WPACK_v0.3.0-chat-native`입니다. Inline reference, 자연어 Authority 해석, `COMPOSITION`, FRESH/EDIT, Project Source Profile, deterministic validation에 초점을 맞춘 ChatGPT Web용 마일스톤입니다.
+현재 버전: `WPACK_v0.4.0-chat-native`

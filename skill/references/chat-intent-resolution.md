@@ -1,42 +1,39 @@
 # Chat Intent Resolution
 
-Use conversational language as the primary interface. Do not force users to write authority IDs, JSON, profile names, or mode names when their intent is already clear.
+Use natural conversational language. Do not require users to write authority IDs, schemas, profiles, or workflow names when intent is clear.
 
-## Mode resolution
+## Mode
 
-Choose `FRESH` for new generation or a new remake. Choose `EDIT` when the user points to an existing target and asks to preserve, modify, refine, restyle, continue, or recompose it.
+Choose `FRESH` for new generation or a new remake. Choose `EDIT` when the user targets an existing usable image for modification.
 
-## Default source intent
+## Default Project sources
 
-Persistent Project sources are already active by default. Phrases meaning "use the source", "refer to the source", or "use the project references" confirm the default and do not require a special activation step.
+Persistent Project sources are active by default. Phrases such as "소스 참고", "use the project sources", or equivalents merely confirm the default.
 
-Phrases meaning "without references", "ignore project sources", or "make it from the prompt only" disable automatic Project sources for that request.
+Phrases meaning "without references", "ignore project sources", or "prompt only" disable automatic Project sources for that request.
 
-## Authority cue mapping
-
-Map explicit intent to roles:
+## Authority cues
 
 | User intent | Authority |
 | --- | --- |
-| same visual feel / same style / use the color treatment | STYLE |
-| keep this person / keep the face / same character | CHARACTER |
-| use this pose / copy the stance | POSE |
-| use this composition / use this framing | COMPOSITION |
-| use these proportions / keep the size relationship | PROPORTION |
+| same visual feel / same style / same rendering | STYLE |
+| keep this person / same character | CHARACTER |
+| use this pose / stance | POSE |
+| use this composition / framing | COMPOSITION |
+| keep these proportions / scale | PROPORTION |
 | keep this outfit / product / object | ITEM |
 
-Equivalent language in any language should be treated the same way.
+Equivalent language in any language should map the same way.
 
 ## Inline references
 
-A current-conversation image can be used without a manifest, but it is optional and secondary to Project sources.
+An inline image is optional and secondary.
 
-- If the user explicitly assigns an inline image to a role, activate it.
-- If that role exists in the default Project profile, replace the default authority for that role for this request unless the user asks to combine them.
-- If the role differs, add the inline authority when the reference limit permits.
-- Do not infer unrestricted influence from the entire inline image.
-- Do not promote an unmentioned attachment into the main source set.
+- Activate it when explicitly referenced or when its intended role is clear.
+- Replace the same default role for the current request unless combination is explicit.
+- If inline STYLE replaces Project STYLE, promote it to STYLE_CORE internally.
+- Do not infer unrestricted influence from the whole image.
 
-## Editing precedence
+## Recovery intent
 
-When the user both preserves properties and asks for a change, preserve the named properties and change only the requested properties.
+Automatic style recovery does not require the user to ask for "two stages". It is an internal fallback only after a fresh candidate has acceptable structure but materially fails STYLE_CORE fidelity.

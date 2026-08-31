@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate W-Pack Project manifests and chat-native generation requests."""
+"""Validate W-Pack manifests and requests and resolve Project-default references."""
 
 from __future__ import annotations
 
@@ -37,7 +37,9 @@ DEFAULT_INLINE_ALLOWED = {
     "STYLE": {
         "palette", "texture", "lighting_language", "graphic_treatment",
         "rendering_language", "surface_treatment", "typography_character",
-        "visual_medium", "stylization_level", "edge_treatment", "degree_of_realism",
+        "visual_medium", "stylization_level", "edge_treatment",
+        "shape_abstraction", "value_structure", "color_behavior",
+        "background_rendering", "degree_of_realism",
     },
     "CHARACTER": {"identity", "facial_features", "hair", "stable_appearance", "wardrobe"},
     "POSE": {"body_arrangement", "gesture", "stance", "limb_relationship", "camera_relative_orientation"},
@@ -77,9 +79,7 @@ def resolve_profile_name(manifest: dict[str, Any], request: dict[str, Any]) -> s
     if isinstance(configured, str) and configured.strip():
         return configured
     profiles = _source_profiles(manifest)
-    if "DEFAULT" in profiles:
-        return "DEFAULT"
-    return None
+    return "DEFAULT" if "DEFAULT" in profiles else None
 
 
 def _reference_role(ref: dict[str, Any], manifest: dict[str, Any]) -> str | None:
@@ -95,18 +95,15 @@ def resolve_active_references(manifest: dict[str, Any], request: dict[str, Any])
     explicit = request.get("references", request.get("authorities", []))
     if not isinstance(explicit, list):
         return []
-
     defaults: list[dict[str, Any]] = []
     if profile_name is not None:
         for authority_id in profiles.get(profile_name, []):
             defaults.append({"source": "PROJECT_AUTHORITY", "id": authority_id})
-
     explicit_roles = {
         role for ref in explicit
         if isinstance(ref, dict) and (role := _reference_role(ref, manifest)) in ALLOWED_ROLES
     }
     defaults = [ref for ref in defaults if _reference_role(ref, manifest) not in explicit_roles]
-
     merged = defaults + [ref for ref in explicit if isinstance(ref, dict)]
     output: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -124,12 +121,10 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if manifest.get("schema_version") != MANIFEST_SCHEMA:
         errors.append(f"schema_version must be {MANIFEST_SCHEMA}")
-
     authorities = manifest.get("authorities")
     if not isinstance(authorities, dict) or not authorities:
         errors.append("authorities must be a non-empty object")
         return errors
-
     for authority_id, authority in authorities.items():
         prefix = f"authority {authority_id!r}"
         if not isinstance(authority_id, str) or not authority_id.strip():
@@ -138,16 +133,13 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
         if not isinstance(authority, dict):
             errors.append(f"{prefix} must be an object")
             continue
-
         file_name = authority.get("file")
         if not isinstance(file_name, str) or not file_name.strip():
             errors.append(f"{prefix}.file must be a non-empty string")
-
         role = authority.get("role")
         if role not in ALLOWED_ROLES:
             errors.append(f"{prefix}.role must be one of {sorted(ALLOWED_ROLES)}")
             continue
-
         allowed = _string_list(authority.get("allowed_influence"))
         forbidden = _string_list(authority.get("forbidden_influence"))
         if allowed is None or not allowed:
@@ -160,30 +152,25 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
             forbidden_set: set[str] = set()
         else:
             forbidden_set = set(forbidden)
-
         overlap = sorted(allowed_set & forbidden_set)
         if overlap:
             errors.append(f"{prefix} has influence listed as both allowed and forbidden: {overlap}")
-
         missing_allowed = sorted(ROLE_REQUIRED_ALLOWED[role] - allowed_set)
         if missing_allowed:
             errors.append(f"{prefix} is missing minimum allowed influence for {role}: {missing_allowed}")
-
         missing_forbidden = sorted(ROLE_REQUIRED_FORBIDDEN[role] - forbidden_set)
         if missing_forbidden:
             errors.append(f"{prefix} is missing minimum forbidden influence for {role}: {missing_forbidden}")
-
     profiles = manifest.get("source_profiles", {})
     if not isinstance(profiles, dict):
         errors.append("source_profiles must be an object when present")
         profiles = {}
-
     for profile_name, ids in profiles.items():
         prefix = f"source profile {profile_name!r}"
+        id_list = _string_list(ids)
         if not isinstance(profile_name, str) or not profile_name.strip():
             errors.append("source profile names must be non-empty strings")
             continue
-        id_list = _string_list(ids)
         if id_list is None or not id_list:
             errors.append(f"{prefix} must be a non-empty string array")
             continue
@@ -200,40 +187,32 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
             if role in roles:
                 errors.append(f"{prefix} contains more than one default authority for role {role}")
             roles.add(role)
-
     default_profile = manifest.get("default_source_profile")
     if default_profile is not None:
         if not isinstance(default_profile, str) or not default_profile.strip():
             errors.append("default_source_profile must be a non-empty string when present")
         elif default_profile not in profiles:
             errors.append("default_source_profile must name an existing source profile")
-
     return errors
 
 
 def _request_references(request: dict[str, Any]) -> Any:
-    if "references" in request:
-        return request.get("references")
-    return request.get("authorities", [])
+    return request.get("references") if "references" in request else request.get("authorities", [])
 
 
 def validate_request(request: dict[str, Any], manifest: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if request.get("schema_version") not in REQUEST_SCHEMAS:
         errors.append(f"request.schema_version must be one of {sorted(REQUEST_SCHEMAS)}")
-
     mode = request.get("mode", "FRESH")
     if mode not in {"FRESH", "EDIT"}:
         errors.append("request.mode must be FRESH or EDIT")
-
     scene = request.get("scene")
     if not isinstance(scene, str) or not scene.strip():
         errors.append("request.scene must be a non-empty string")
-
     use_default_sources = request.get("use_default_sources", True)
     if not isinstance(use_default_sources, bool):
         errors.append("request.use_default_sources must be a boolean when present")
-
     profiles = _source_profiles(manifest)
     source_profile = request.get("source_profile")
     if source_profile is not None:
@@ -241,34 +220,26 @@ def validate_request(request: dict[str, Any], manifest: dict[str, Any]) -> list[
             errors.append("request.source_profile must be a non-empty string when present")
         elif source_profile not in profiles:
             errors.append(f"request.source_profile {source_profile!r} is not defined in the manifest")
-
     references = _request_references(request)
     if not isinstance(references, list):
         errors.append("request.references must be an array")
         return errors
     if len(references) > REFERENCE_SLOT_LIMIT:
         errors.append(f"request uses {len(references)} explicit references; limit is {REFERENCE_SLOT_LIMIT}")
-
     known = manifest.get("authorities", {})
     seen_keys: set[str] = set()
     claimed_properties: dict[str, str] = {}
-
     for index, ref in enumerate(references):
         prefix = f"request.references[{index}]"
         if not isinstance(ref, dict):
             errors.append(f"{prefix} must be an object")
             continue
-
         source = ref.get("source", "PROJECT_AUTHORITY")
         if source not in ALLOWED_SOURCES:
             errors.append(f"{prefix}.source must be one of {sorted(ALLOWED_SOURCES)}")
             continue
-
         authority_id = ref.get("id")
         role = ref.get("role")
-        allowed: set[str]
-        forbidden: set[str]
-
         if source == "PROJECT_AUTHORITY":
             if not isinstance(authority_id, str) or authority_id not in known:
                 errors.append(f"{prefix}.id is not present in the authority manifest")
@@ -289,14 +260,12 @@ def validate_request(request: dict[str, Any], manifest: dict[str, Any]) -> list[
                 errors.append(f"{prefix}.id must be a non-empty ephemeral ID for inline references")
                 continue
             allowed = DEFAULT_INLINE_ALLOWED[role]
-            forbidden = set()
+            forbidden: set[str] = set()
             unique_key = f"inline:{authority_id}"
-
         if unique_key in seen_keys:
             errors.append(f"duplicate reference: {authority_id}")
             continue
         seen_keys.add(unique_key)
-
         influence = ref.get("influence")
         if influence is not None:
             influence_list = _string_list(influence)
@@ -312,25 +281,19 @@ def validate_request(request: dict[str, Any], manifest: dict[str, Any]) -> list[
                     if prior is not None and prior != unique_key:
                         errors.append(f"authority conflict for {prop!r}: {prior} and {unique_key} both claim it")
                     claimed_properties[prop] = unique_key
-
     if not errors:
         active = resolve_active_references(manifest, request)
         if len(active) > REFERENCE_SLOT_LIMIT:
-            errors.append(
-                f"request resolves to {len(active)} active references after default profile expansion; limit is {REFERENCE_SLOT_LIMIT}"
-            )
-
+            errors.append(f"request resolves to {len(active)} active references after default profile expansion; limit is {REFERENCE_SLOT_LIMIT}")
     edit_target = request.get("edit_target")
     if mode == "FRESH" and edit_target:
         errors.append("fresh generation cannot include an edit target")
     if mode == "EDIT" and (not isinstance(edit_target, str) or not edit_target.strip()):
         errors.append("edit mode requires a non-empty edit_target")
-
     for field in ("composition", "lighting", "preserve", "avoid"):
         value = request.get(field, [])
         if value is not None and _string_list(value) is None:
             errors.append(f"request.{field} must be a string array when present")
-
     return errors
 
 
@@ -339,18 +302,14 @@ def main() -> int:
     parser.add_argument("manifest", type=Path)
     parser.add_argument("--request", type=Path)
     args = parser.parse_args()
-
     try:
         manifest = load_json(args.manifest)
         errors = validate_manifest(manifest)
         if args.request is not None and not errors:
-            request = load_json(args.request)
-            errors.extend(validate_request(request, manifest))
+            errors.extend(validate_request(load_json(args.request), manifest))
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         errors = [str(exc)]
-
-    result = {"status": "PASS" if not errors else "FAIL", "errors": errors}
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    print(json.dumps({"status": "PASS" if not errors else "FAIL", "errors": errors}, ensure_ascii=False, indent=2))
     return 0 if not errors else 1
 
 

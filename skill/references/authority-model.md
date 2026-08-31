@@ -1,48 +1,50 @@
 # Authority Model
 
-Every active generation reference has one primary authority role. A role limits what the reference may influence. Resolve roles from the Project manifest or the user's explicit intent, not from incidental visual content.
+Assign one primary bounded role to each active reference. Resolve authority from the Project manifest or explicit user intent, not incidental visual content.
 
-## STYLE
+## STYLE / STYLE_CORE
 
-Allowed: palette, texture, lighting language, typography character, graphic treatment, rendering language, surface treatment, visual medium, stylization level, edge treatment, and degree of realism.
+Allowed: palette, texture, lighting language, typography character, graphic treatment, rendering language, surface treatment, visual medium, stylization level, contour and edge behavior, shape abstraction, value structure, color behavior, background rendering behavior, and degree of realism.
 
-Forbidden by default: subject identity, exact pose, exact composition, item identity, and unrelated factual scene content.
+Forbidden by default: identity, exact pose, exact composition, item identity, and unrelated factual scene content.
 
-A STYLE authority is a strong visual anchor. When active, preserve the reference medium and rendering domain. Do not normalize a non-photographic reference into generic photorealism unless the user explicitly requests photography or photorealism.
+When exactly one STYLE authority is active, treat it as `STYLE_CORE` internally. STYLE_CORE has absolute precedence for global visual grammar while remaining bounded against content leakage.
 
 ## CHARACTER
 
-Allowed: identity, facial features, hair, stable appearance traits, and wardrobe only when explicitly scoped.
+Allowed: identity, facial features, hair, stable appearance traits, and explicitly scoped wardrobe.
 
-Forbidden by default: background, global lighting, camera angle, composition, global graphic treatment, and unrelated items.
+Forbidden by default: background, global lighting, camera angle, composition, global style, and unrelated items.
 
 ## POSE
 
-Allowed: body arrangement, gesture, stance, limb relationship, and broad camera-relative orientation.
+Allowed: body arrangement, gesture, stance, limb relationships, and camera-relative orientation.
 
-Forbidden by default: identity, wardrobe, environment, style, and composition outside pose-dependent framing.
+Forbidden by default: identity, wardrobe, environment, global style, and unrelated composition.
 
 ## COMPOSITION
 
 Allowed: framing, crop, camera angle, subject placement, layout structure, hierarchy, negative space, and broad spatial arrangement.
 
-Forbidden by default: identity, facial features, wardrobe, global style, palette, item identity, and exact factual content.
+Forbidden by default: identity, facial features, wardrobe, global style, palette, and item identity.
 
 ## PROPORTION
 
-Allowed: physical scale, body-to-object ratio, object-to-object scale, and framing-relevant relative dimensions.
+Allowed: physical scale and relative dimensions.
 
-Forbidden by default: identity, pose details, style, and material appearance.
+Forbidden by default: identity, detailed pose, global style, and material appearance.
 
 ## ITEM
 
-Allowed: specified object identity, silhouette, key structural details, material, and color when explicitly scoped.
+Allowed: specified object identity, silhouette, structural details, material, and explicitly scoped color.
 
 Forbidden by default: subject identity, pose, environment, global style, and composition.
 
-## Scope rules
+## Recovery boundary
 
-- Project authorities may be automatically activated through the default source profile.
-- Current-chat authorities are optional and secondary.
-- If an explicit per-request authority claims the same role as a default Project authority, it overrides that default role unless the user asks to combine them.
-- Never copy incidental elements merely because they are visible.
+During automatic `SINGLE_RESTYLE`, use exactly two conceptual authorities:
+
+- `STRUCTURE_EDIT_TARGET`: the fresh candidate; controls content and geometry only.
+- `STYLE_CORE`: controls rendering grammar only.
+
+Do not send CHARACTER, POSE, COMPOSITION, PROPORTION, or ITEM sources into the recovery pass. Their successful output is already embodied in the structure target.

@@ -1,19 +1,15 @@
 # Source Profiles
 
-Source profiles are the primary persistent reference mechanism for W-Pack in ChatGPT Projects.
+Use Project source profiles as W-Pack's primary persistent reference mechanism.
 
-## Default behavior
+## Resolution order
 
-Project sources are active by default. The user should not need to attach images in every chat or repeat a phrase asking W-Pack to use the sources.
-
-Resolve the active profile in this order:
-
-1. If `use_default_sources` is false, activate no automatic Project profile.
-2. If the request names `source_profile`, use that profile.
+1. If `use_default_sources=false`, activate no automatic Project profile.
+2. If the request names `source_profile`, use it.
 3. Otherwise use manifest `default_source_profile`.
 4. Otherwise use a profile named `DEFAULT` when present.
 
-A profile maps a profile name to a bounded set of Project authority IDs. Example:
+Example:
 
 ```json
 {
@@ -24,18 +20,18 @@ A profile maps a profile name to a bounded set of Project authority IDs. Example
 }
 ```
 
-## Inline references
+The user does not need to repeat a phrase such as "use the sources".
 
-Current-chat image attachments are secondary. Do not make them the default reference path.
+## Inline overrides
 
-When the user explicitly assigns an inline reference to a role already provided by the active profile, use the inline reference as the per-request override for that role. Keep the remaining Project authorities active.
+Treat current-chat images as secondary.
 
-When the inline reference has a different role, add it if the total active reference count remains within the limit.
-
-Do not treat an unmentioned chat attachment as permission to replace the Project source set.
+- Activate an inline image only when the user points to it or its intended influence is clear.
+- If an inline reference claims the same role as a default Project authority, replace that default role for the current request unless the user requests combination.
+- If inline STYLE replaces Project STYLE, the inline STYLE becomes STYLE_CORE for that request.
+- Keep unaffected Project authorities active.
+- Do not promote an unmentioned attachment into the source set.
 
 ## Limits
 
-- Maximum 5 active generation references after profile expansion and overrides.
-- Keep every authority bound to its declared role and allowed influence.
-- If a profile authority is missing, do not silently replace it with another Project image.
+Keep at most five active generation references after profile expansion and overrides. Keep exactly one STYLE authority in ordinary default profiles so automatic style recovery can resolve a singular STYLE_CORE.
