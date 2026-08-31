@@ -1,6 +1,6 @@
 ---
 name: w-pack
-description: ChatGPT-native image-generation and editing control layer for persistent Project references, direct visual references, multi-source style families, and source-fidelity recovery. Use when creating, restyling, modifying, or refining images with Project or current-chat references, especially when style, character, pose, composition, proportion, item fidelity, or reference-image handoff matters.
+description: ChatGPT-native image-generation and editing control layer for persistent Project references, direct visual references, multi-source style families, and source-fidelity recovery. Use when creating, restyling, modifying, or refining images with Project or current-chat references, especially when style, character, pose, composition, proportion, item fidelity, hair rendering, or reference-image handoff matters.
 ---
 
 # W-Pack
@@ -15,12 +15,13 @@ Use W-Pack as a transport-aware, Project-source-first control layer for ChatGPT 
 4. Verify reference transport before generation. A Project file being present is **not** proof that the image-generation model received it as a visual reference.
 5. Resolve the style family: exactly one `STYLE_CORE`, plus zero to two bounded `STYLE_SUPPORT` sources when configured.
 6. If a Project style image is inspectable but direct visual binding is unverified, derive or reuse a detailed text STYLE DNA. Never describe text fallback as equivalent to direct visual binding.
-7. Compile and generate one fresh candidate first.
-8. Audit reference binding, structure, STYLE_CORE fidelity, and STYLE_SUPPORT domains separately.
-9. If structure passes and style fails, run exactly one `SINGLE_RESTYLE` recovery using the fresh candidate, STYLE_CORE, and at most one relevant STYLE_SUPPORT.
-10. Never recursively restyle or run an automatic third image-generation pass.
+7. When visible human hair is materially present, resolve hair rendering grammar separately from generic texture. Read `references/hair-rendering-policy.md` and default to `CLEAN_MASS` only when no authoritative source specifies another hair grammar.
+8. Compile and generate one fresh candidate first.
+9. Audit reference binding, structure, STYLE_CORE fidelity, hair rendering when relevant, and STYLE_SUPPORT domains separately.
+10. If structure passes and style fails, run exactly one `SINGLE_RESTYLE` recovery using the fresh candidate, STYLE_CORE, and at most one relevant STYLE_SUPPORT.
+11. Never recursively restyle or run an automatic third image-generation pass.
 
-Read `references/reference-transport.md` whenever persistent or prior references are involved. Read `references/style-family.md` for multi-style behavior. Read `references/source-profiles.md`, `references/authority-model.md`, `references/generation-policy.md`, `references/style-recovery-policy.md`, `references/edit-policy.md`, and `references/audit-policy.md` as needed.
+Read `references/reference-transport.md` whenever persistent or prior references are involved. Read `references/style-family.md` for multi-style behavior. Read `references/hair-rendering-policy.md` whenever visible human hair is a salient part of the subject. Read `references/source-profiles.md`, `references/authority-model.md`, `references/generation-policy.md`, `references/style-recovery-policy.md`, `references/edit-policy.md`, and `references/audit-policy.md` as needed.
 
 ## Persistent sources
 
@@ -67,6 +68,7 @@ Resolve exactly one STYLE_CORE when style authority exists. STYLE_CORE has absol
 - color behavior
 - texture and surface treatment
 - background rendering behavior
+- hair rendering grammar when hair is visible and the source makes it observable
 
 Do not normalize a stylized or non-photographic STYLE_CORE into generic photorealism unless the user explicitly asks for photography or photorealism.
 
@@ -76,7 +78,7 @@ Camera brand, focal length, telephoto, depth of field, low angle, and high angle
 
 Allow up to two STYLE_SUPPORT sources. A support source is a bounded adapter, not a second equal style. It may influence only declared support domains such as color behavior, value structure, surface treatment, or background rendering.
 
-STYLE_SUPPORT must not override STYLE_CORE medium, realism level, or shape abstraction. If style sources disagree, preserve STYLE_CORE rather than averaging them.
+STYLE_SUPPORT must not override STYLE_CORE medium, realism level, shape abstraction, or hair rendering grammar unless hair is explicitly declared as that support source's bounded domain. If style sources disagree, preserve STYLE_CORE rather than averaging them.
 
 ## STYLE DNA
 
@@ -84,7 +86,8 @@ When direct Project-image visual binding cannot be confirmed but ChatGPT can ins
 
 - medium and mark-making
 - line width, taper, edge hardness, and contour hierarchy
-- face/eye/hair abstraction
+- face/eye abstraction
+- hair silhouette, lock grouping, strand density, tip behavior, and highlight granularity
 - shape language
 - shadow shapes, value bands, gradient behavior
 - highlight geometry and material treatment
@@ -95,6 +98,21 @@ When direct Project-image visual binding cannot be confirmed but ChatGPT can ins
 - anti-drift traits that must not appear
 
 Use the CORE DNA globally. Apply SUPPORT DNA only to declared support domains. Avoid vague labels such as "anime style" when the source contains more specific observable grammar.
+
+## Hair rendering
+
+Treat hair as a high-salience style subsystem rather than generic fine texture.
+
+When the user or an authoritative source does not request messy, frizzy, wet, windblown, strand-heavy, or similarly specific hair behavior, use the `CLEAN_MASS` fallback from `references/hair-rendering-policy.md`:
+
+- establish silhouette, parting, bangs/fringe, length, volume, and gravity flow first
+- build a small number of coherent locks or ribbons before micro-detail
+- keep outer silhouette continuous and calm
+- keep flyaways sparse and physically motivated
+- group strand ends instead of repeatedly forking them
+- prefer broad lock-level highlights over bright thread-like filament highlights
+
+Do not overcorrect into plastic, helmet-like, uniformly smooth hair. Preserve believable overlap, volume, softness, and variation at the lock level.
 
 ## Conditional recovery
 
@@ -113,8 +131,8 @@ During recovery:
 - fresh candidate = `STRUCTURE_EDIT_TARGET`; content/geometry authority only
 - STYLE_CORE = global style authority
 - optionally one matching STYLE_SUPPORT = bounded style adapter only
-- preserve identity, pose, composition, camera, spatial relationships, object count/contact, scene content, and exact text
-- change rendering style only
+- preserve identity, pose, composition, camera, spatial relationships, object count/contact, scene content, exact text, and hairstyle geometry
+- change rendering style only, including hair rendering grammar when that is the failed axis
 - do not crop, rotate, mirror, zoom, add, remove, replace, duplicate, or redesign content
 
 Do not use style recovery to fix structural failures.
@@ -159,6 +177,7 @@ The compiler emits `WPACK_COMPILED_REQUEST_v1.3` with explicit reference-transpo
 - Preserve exact user-specified text.
 - Do not substitute unresolved Project authorities with visually similar files.
 - Do not hide source-transport failure behind stronger prompt wording.
+- Do not let generic image-model micro-detail override an explicit or source-derived hair grammar.
 
 ## Generation transport
 
@@ -168,6 +187,7 @@ Use ChatGPT's built-in image-generation capability. Do not require an API key, s
 
 - `references/reference-transport.md` — visual binding vs Project context and fallback rules.
 - `references/style-family.md` — STYLE_CORE, STYLE_SUPPORT, and STYLE DNA.
+- `references/hair-rendering-policy.md` — hair mass/lock/strand hierarchy, anti-signature controls, audit, and recovery.
 - `references/source-profiles.md` — persistent source activation and overrides.
 - `references/authority-model.md` — bounded authority semantics.
 - `references/chat-intent-resolution.md` — conversational role and mode resolution.
