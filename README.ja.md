@@ -1,35 +1,44 @@
 # W-Pack
 
-### ChatGPT向け Project-source-first 画像生成ハーネス
+### ChatGPT 向けリファレンス制御型画像生成ハーネス
 
 [English](./README.md) · [한국어](./README.ko.md) · **日本語** · [简体中文](./README.zh-CN.md) · [繁體中文](./README.zh-TW.md)
 
-W-Pack v0.4 は、ChatGPT Web / Projects で再利用可能な Project 参照画像をデフォルトで使い、各参照の影響範囲を分離しながらスタイル忠実度を管理します。
+W-Pack v0.5.1 は、ChatGPT Web / Projects で再利用する画像リファレンスを **authority（何を制御するか）** と **transport（画像モデルへ実際に渡ったか）** に分けて扱います。
 
-## v0.4 の要点
+## v0.5.1
 
-- Project の `DEFAULT` ソースを自動的に有効化
-- 単一の STYLE 参照を内部的に `STYLE_CORE` として扱う
-- 画材・レンダリング領域・写実度・輪郭・抽象化・陰影・色・質感を強く保持
-- 最初は必ず 1 回の FRESH 生成
-- 構造が成功し、スタイルだけが失敗した場合に限り 1 回だけ `SINGLE_RESTYLE`
-- 再帰的 restyle と自動 3 回目の生成は禁止
-- チャット添付画像は一時的な override / add-on として使用
+- Project にファイルが存在するだけでは `VISUAL_BOUND` と見なしません。
+- STYLE は `STYLE_CORE` 1つ + `STYLE_SUPPORT` 最大2つで解決します。
+- 直接の視覚バインドが不明な場合は、`style_signature` / `anti_drift_signature` による STYLE DNA を利用できます。
+- 髪を `hair_rendering_grammar` という独立した高重要度のスタイル軸として監査します。
+- 既定の `CLEAN_MASS` は、過剰なアホ毛、繰り返し分岐する毛先、顔を横切るランダムな細毛、糸状ハイライトを抑制します。
+- 構造が成功しスタイルだけが失敗した場合のみ、`SINGLE_RESTYLE` を1回だけ実行できます。
+
+## STYLE family
+
+`STYLE_CORE` が媒体、写実度、形状抽象化、エッジ、明暗、色、表面、背景、髪のレンダリング文法を支配します。`STYLE_SUPPORT` は宣言された support domain のみを補助し、CORE の媒体・写実度・形状抽象化を上書きできません。
+
+## Hair rendering
+
+既定の順序:
 
 ```text
-Project DEFAULT sources
-        ↓
-   FRESH generation
-        ↓
- structure/style audit
-     /          \
-  PASS       style FAIL
-   ↓              ↓
- DONE       SINGLE RESTYLE
+silhouette → major grouped locks → internal texture → sparse micro-strands
 ```
 
-`SINGLE_RESTYLE` では、生成済み候補を `STRUCTURE_EDIT_TARGET`、STYLE_CORE を唯一のスタイル権限として使用します。人物、ポーズ、構図、カメラ、空間関係、物体数、接触関係、シーン条件を維持し、レンダリングスタイルだけを変更します。
+ただし、参照画像が意図的に縮れ毛、濡れ髪、風になびく髪、強い毛束分離を示す場合は参照側を優先します。
 
-`85mm`、telephoto、low angle などのカメラ用語は光学・構図の指定であり、非写実 STYLE_CORE を自動的に写真へ変換しません。
+## Recovery
 
-現在のバージョン: `WPACK_v0.4.0-chat-native`
+自動回復には、構造 PASS / スタイル FAIL / STYLE_CORE 1つに加え、STYLE_CORE が `VISUAL_BOUND` または利用可能な STYLE DNA を持つ必要があります。
+
+```text
+STRUCTURE_EDIT_TARGET + STYLE_CORE + optional one relevant STYLE_SUPPORT
+```
+
+再帰 restyle と自動3回目生成は禁止です。
+
+詳細: [`QUICKSTART.md`](./QUICKSTART.md) / [English README](./README.md)
+
+現在のバージョン: **`WPACK_v0.5.1-chat-native`**
