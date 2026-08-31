@@ -1,117 +1,142 @@
 ---
 name: w-pack
-description: ChatGPT-native image generation and editing control layer that uses persistent Project references as the default visual source set, keeps reference roles bounded, preserves a single STYLE_CORE visual grammar, and conditionally performs one style-only recovery edit when a fresh result has acceptable structure but poor style fidelity. Use for fresh image generation, restyling, reference-guided edits, or requests involving reusable Project sources, character, pose, composition, proportion, item, or style fidelity.
+description: ChatGPT-native image-generation and editing control layer for persistent Project references, direct visual references, multi-source style families, and source-fidelity recovery. Use when creating, restyling, modifying, or refining images with Project or current-chat references, especially when style, character, pose, composition, proportion, item fidelity, or reference-image handoff matters.
 ---
 
 # W-Pack
 
-Use W-Pack as a Project-source-first control layer for ChatGPT image generation. Keep normal interaction conversational; keep authority resolution, auditing, and recovery logic internal.
+Use W-Pack as a transport-aware, Project-source-first control layer for ChatGPT image generation. Keep interaction conversational. Keep authority resolution, source-binding checks, STYLE DNA, auditing, and recovery internal unless the user asks to inspect them or a material limitation must be surfaced.
 
 ## Core workflow
 
 1. Resolve `FRESH` vs `EDIT`.
 2. Activate persistent Project sources by default using `default_source_profile`, otherwise `DEFAULT` when present.
-3. Treat current-chat images as optional per-request overrides or additions, not as the primary source path.
-4. Assign bounded roles: `STYLE`, `CHARACTER`, `POSE`, `COMPOSITION`, `PROPORTION`, `ITEM`.
-5. Resolve exactly one active `STYLE` authority as `STYLE_CORE` when possible. If an explicit inline STYLE overrides the Project STYLE, promote the inline STYLE to `STYLE_CORE` for that request.
-6. Compile the first pass as `FRESH_FIRST` for new images. Preserve the STYLE_CORE medium and global visual grammar.
-7. Generate one fresh candidate.
-8. Audit structure and style separately.
-9. If structure passes and style fails, run exactly one `SINGLE_RESTYLE` recovery using only the fresh candidate as `STRUCTURE_EDIT_TARGET` and the active `STYLE_CORE` as the sole style authority.
-10. Never recursively restyle. Never run an automatic third image-generation pass. If the recovery still fails, stop the automatic chain; the next retry must begin fresh from the original sources.
+3. Resolve bounded roles: `STYLE`, `CHARACTER`, `POSE`, `COMPOSITION`, `PROPORTION`, `ITEM`.
+4. Verify reference transport before generation. A Project file being present is **not** proof that the image-generation model received it as a visual reference.
+5. Resolve the style family: exactly one `STYLE_CORE`, plus zero to two bounded `STYLE_SUPPORT` sources when configured.
+6. If a Project style image is inspectable but direct visual binding is unverified, derive or reuse a detailed text STYLE DNA. Never describe text fallback as equivalent to direct visual binding.
+7. Compile and generate one fresh candidate first.
+8. Audit reference binding, structure, STYLE_CORE fidelity, and STYLE_SUPPORT domains separately.
+9. If structure passes and style fails, run exactly one `SINGLE_RESTYLE` recovery using the fresh candidate, STYLE_CORE, and at most one relevant STYLE_SUPPORT.
+10. Never recursively restyle or run an automatic third image-generation pass.
 
-Read `references/style-recovery-policy.md` before applying the two-stage path. Read `references/source-profiles.md`, `references/authority-model.md`, `references/generation-policy.md`, `references/edit-policy.md`, and `references/audit-policy.md` as needed.
+Read `references/reference-transport.md` whenever persistent or prior references are involved. Read `references/style-family.md` for multi-style behavior. Read `references/source-profiles.md`, `references/authority-model.md`, `references/generation-policy.md`, `references/style-recovery-policy.md`, `references/edit-policy.md`, and `references/audit-policy.md` as needed.
 
 ## Persistent sources
 
-Project sources are active by default. The user does not need to repeat "use the sources".
+Persistent Project authorities remain the primary reusable catalog. The user does not need to repeat "use the sources".
 
 Precedence:
 
-1. Explicit user instruction for the current request.
+1. Explicit per-request user instruction.
 2. Explicit current-chat reference override.
 3. Explicitly named source profile.
 4. Manifest `default_source_profile`.
 5. Profile named `DEFAULT`.
 
-Disable default Project sources only when the user explicitly asks to ignore them or the internal request has `use_default_sources=false`.
+Disable default Project sources only when the user explicitly asks to ignore them or `use_default_sources=false`.
 
-If an explicit reference claims a role already supplied by the active Project profile, replace that default role for the current request unless the user clearly asks to combine both.
+An explicit current-chat STYLE replaces the Project style family for that request unless the user explicitly asks to combine them. Keep unaffected non-style Project authorities active.
 
-## STYLE_CORE
+## Reference transport is separate from authority
 
-Treat one active STYLE authority as the global visual grammar anchor.
+Never assume that a selected Project image is automatically a usable visual input to the image model.
 
-Preserve its:
+Use this hierarchy:
+
+1. **Direct visual binding available**: use the actual image reference.
+2. **Project image inspectable, visual handoff unverified**: analyze the source and use a source-derived authority profile. For STYLE, compile STYLE DNA.
+3. **Text profile only**: use it as degraded fallback and do not claim exact visual fidelity.
+4. **No image and no usable profile**: do not pretend the source was applied.
+
+For exact CHARACTER, POSE, COMPOSITION, PROPORTION, or ITEM fidelity, direct visual binding is materially stronger than text-only fallback. If binding is unavailable, do not claim exact preservation.
+
+## STYLE family
+
+Do not average several equal global styles.
+
+### STYLE_CORE
+
+Resolve exactly one STYLE_CORE when style authority exists. STYLE_CORE has absolute precedence for global visual grammar:
 
 - visual medium and rendering domain
-- stylization level and degree of realism
-- contour and edge behavior
+- degree of realism
 - shape and feature abstraction
-- shading and value structure
+- contour and edge grammar
+- dominant shading and value structure
 - color behavior
 - texture and surface treatment
-- background simplification or rendering behavior
+- background rendering behavior
 
 Do not normalize a stylized or non-photographic STYLE_CORE into generic photorealism unless the user explicitly asks for photography or photorealism.
 
-Camera and lens terms control framing, perspective, depth of field, or optical behavior. They do not override STYLE_CORE medium by themselves.
+Camera brand, focal length, telephoto, depth of field, low angle, and high angle control optical/composition behavior; they do not override STYLE_CORE medium by themselves.
 
-Default STYLE_CORE constraints:
+### STYLE_SUPPORT
 
-- `style_fidelity`: `HIGH`
-- `medium_lock`: `REFERENCE`
-- `photorealism_normalization`: `DISABLED_UNLESS_EXPLICITLY_REQUESTED`
-- `style_core_precedence`: `ABSOLUTE_FOR_GLOBAL_VISUAL_GRAMMAR`
+Allow up to two STYLE_SUPPORT sources. A support source is a bounded adapter, not a second equal style. It may influence only declared support domains such as color behavior, value structure, surface treatment, or background rendering.
 
-STYLE_CORE must not copy reference identity, exact pose, exact composition, item identity, or unrelated scene content unless separately authorized.
+STYLE_SUPPORT must not override STYLE_CORE medium, realism level, or shape abstraction. If style sources disagree, preserve STYLE_CORE rather than averaging them.
 
-## Conditional two-stage recovery
+## STYLE DNA
 
-Do not make two-stage generation the default. The normal path is one fresh generation.
+When direct Project-image visual binding cannot be confirmed but ChatGPT can inspect the source, derive a compact high-specificity STYLE DNA from observable properties:
 
-Run the recovery pass only when all are true:
+- medium and mark-making
+- line width, taper, edge hardness, and contour hierarchy
+- face/eye/hair abstraction
+- shape language
+- shadow shapes, value bands, gradient behavior
+- highlight geometry and material treatment
+- saturation and palette relationships
+- texture and surface treatment
+- background simplification and depth cues
+- degree of realism
+- anti-drift traits that must not appear
+
+Use the CORE DNA globally. Apply SUPPORT DNA only to declared support domains. Avoid vague labels such as "anime style" when the source contains more specific observable grammar.
+
+## Conditional recovery
+
+Normal path: one FRESH generation.
+
+Run `SINGLE_RESTYLE` only when all are true:
 
 - original mode is `FRESH`
-- exactly one STYLE_CORE exists
-- the fresh candidate's structure is acceptable
-- style fidelity materially fails
+- one STYLE_CORE exists
+- structure is materially acceptable
+- style materially fails
+- STYLE_CORE is visually bound or usable STYLE DNA exists
 
-Material style failure includes any of:
+During recovery:
 
-- visual medium class mismatch
-- non-photographic source drifting into generic photorealism
-- severe degree-of-realism mismatch
-- clear global grammar drift across multiple style fingerprint axes
+- fresh candidate = `STRUCTURE_EDIT_TARGET`; content/geometry authority only
+- STYLE_CORE = global style authority
+- optionally one matching STYLE_SUPPORT = bounded style adapter only
+- preserve identity, pose, composition, camera, spatial relationships, object count/contact, scene content, and exact text
+- change rendering style only
+- do not crop, rotate, mirror, zoom, add, remove, replace, duplicate, or redesign content
 
-Do not use restyle to repair anatomy, scene, composition, missing objects, or other structural failures. Restart fresh on the next retry instead.
-
-During `SINGLE_RESTYLE`:
-
-- Image 1 / current candidate = `STRUCTURE_EDIT_TARGET`; it has no style authority.
-- Project STYLE_CORE = sole style authority.
-- Preserve subject identity, pose, composition, camera decision, spatial relationships, object count, physical contact, scene conditions, and exact text when present.
-- Change rendering style only.
-- Do not crop, mirror, zoom, rotate, add, remove, replace, duplicate, or redesign content.
-- Perform one restyle pass maximum.
+Do not use style recovery to fix structural failures.
 
 ## Modes
 
-Use `FRESH` for a new image or a new remake. Do not silently reuse prior candidates.
+Use `FRESH` for new images and remakes. Do not silently reuse prior generated candidates.
 
-Use `EDIT` when the user explicitly targets an existing usable image for modification. `EDIT` may internally be `MODIFY`, `RESTYLE`, or `RECOMPOSE`, but the automatic `SINGLE_RESTYLE` recovery described above is reserved for a failed FRESH style audit.
+Use `EDIT` when the user explicitly targets a usable existing image for modification. User-requested `EDIT` is distinct from automatic `SINGLE_RESTYLE` recovery.
 
-## Internal first-pass contract
+## Internal request contract
 
 Use this logical shape internally:
 
 ```json
 {
-  "schema_version": "WPACK_GENERATION_REQUEST_v1.1",
+  "schema_version": "WPACK_GENERATION_REQUEST_v1.2",
   "mode": "FRESH",
   "scene": "...",
   "aspect_ratio": "4:5",
   "use_default_sources": true,
+  "combine_style_sources": false,
   "source_profile": null,
   "references": [],
   "composition": [],
@@ -123,34 +148,38 @@ Use this logical shape internally:
 }
 ```
 
-The compiler emits `WPACK_COMPILED_REQUEST_v1.2` with a `workflow` block describing `FRESH_FIRST` and conditional recovery.
+The compiler emits `WPACK_COMPILED_REQUEST_v1.3` with explicit reference-transport, style-family, STYLE DNA, and recovery policy metadata.
 
 ## Conflict handling
 
 - Fail closed on incompatible authority claims.
-- Keep reference count at 5 or fewer.
-- Keep STYLE_CORE singular for automatic recovery. If multiple active STYLE authorities cannot be reduced to one clear core, disable automatic style recovery rather than guessing.
+- Keep first-pass reference count at five or fewer.
+- Permit multiple STYLE references only as one CORE plus up to two SUPPORT sources.
+- Do not let a SUPPORT silently become a second global style.
 - Preserve exact user-specified text.
 - Do not substitute unresolved Project authorities with visually similar files.
+- Do not hide source-transport failure behind stronger prompt wording.
 
 ## Generation transport
 
-Use ChatGPT's built-in image-generation capability. Do not require an API key, standalone image API, Codex OAuth, or a local GPU.
+Use ChatGPT's built-in image-generation capability. Do not require an API key, standalone image API, Codex OAuth, or local GPU.
 
 ## Supporting resources
 
-- `references/source-profiles.md` — persistent source activation and inline override rules.
-- `references/authority-model.md` — bounded authority semantics and STYLE_CORE rules.
+- `references/reference-transport.md` — visual binding vs Project context and fallback rules.
+- `references/style-family.md` — STYLE_CORE, STYLE_SUPPORT, and STYLE DNA.
+- `references/source-profiles.md` — persistent source activation and overrides.
+- `references/authority-model.md` — bounded authority semantics.
 - `references/chat-intent-resolution.md` — conversational role and mode resolution.
-- `references/generation-policy.md` — first-pass generation rules.
-- `references/style-recovery-policy.md` — conditional fresh-to-single-restyle workflow.
-- `references/edit-policy.md` — user-requested image editing.
-- `references/audit-policy.md` — structure/style audit and recovery trigger.
+- `references/generation-policy.md` — first-pass generation and fallback rules.
+- `references/style-recovery-policy.md` — conditional single-restyle workflow.
+- `references/edit-policy.md` — user-requested editing.
+- `references/audit-policy.md` — binding/structure/style audit.
 - `references/project-setup.md` — recommended Project configuration.
-- `references/authority-manifest.example.json` — default profile example.
-- `references/generation-request.example.json` — first-pass request example.
-- `scripts/validate_authorities.py` — manifest/request validation and default-source resolution.
-- `scripts/compile_request.py` — first-pass compilation and style-recovery compilation.
+- `references/authority-manifest.example.json` — v1.1 style-family manifest example.
+- `references/generation-request.example.json` — v1.2 request example.
+- `scripts/validate_authorities.py` — deterministic manifest/request validation.
+- `scripts/compile_request.py` — transport-aware first-pass/recovery compilation.
 - `scripts/self_test.py` — deterministic smoke tests.
 
 ## Verification

@@ -1,8 +1,8 @@
 {
-  "schema_version": "WPACK_SPEC_v1.2",
+  "schema_version": "WPACK_SPEC_v1.3",
   "display_name": "W-Pack",
   "pack_id": "WPACK",
-  "pack_version": "WPACK_v0.4.0-chat-native",
+  "pack_version": "WPACK_v0.5.0-chat-native",
   "scope": "CHATGPT_WEB_PROJECT_IMAGE_GENERATION_HARNESS",
   "repository": "chano-gpt/w-pack",
   "reference_slot_limit": 5,
@@ -11,25 +11,41 @@
   "api_key_required": false,
   "local_gpu_required": false,
   "authority_roles": ["STYLE", "CHARACTER", "POSE", "COMPOSITION", "PROPORTION", "ITEM"],
-  "internal_authority_roles": ["STYLE_CORE", "STRUCTURE_EDIT_TARGET"],
+  "internal_authority_roles": ["STYLE_CORE", "STYLE_SUPPORT", "STRUCTURE_EDIT_TARGET"],
   "reference_sources": ["PROJECT_AUTHORITY", "INLINE_AUTHORITY"],
-  "request_schema": "WPACK_GENERATION_REQUEST_v1.1",
-  "compiled_request_schema": "WPACK_COMPILED_REQUEST_v1.2",
-  "style_audit_schema": "WPACK_STYLE_AUDIT_v1.0",
-  "style_recovery_schema": "WPACK_STYLE_RECOVERY_REQUEST_v1.0",
+  "reference_transport_states": [
+    "VISUAL_BOUND",
+    "VISUAL_INPUT_EXPECTED",
+    "PROJECT_CONTEXT_ONLY",
+    "TEXT_PROFILE_ONLY",
+    "UNVERIFIED_PROJECT_SOURCE",
+    "UNAVAILABLE"
+  ],
+  "request_schema": "WPACK_GENERATION_REQUEST_v1.2",
+  "compiled_request_schema": "WPACK_COMPILED_REQUEST_v1.3",
+  "style_audit_schema": "WPACK_STYLE_AUDIT_v1.1",
+  "style_recovery_schema": "WPACK_STYLE_RECOVERY_REQUEST_v1.1",
   "generation_modes": ["FRESH", "EDIT"],
   "generation_policy": {
     "fresh_generation_default": true,
     "project_sources_default_active": true,
-    "default_profile_fallback_name": "DEFAULT",
+    "project_membership_is_visual_binding_proof": false,
+    "reference_binding_verification_required": true,
+    "text_style_dna_fallback_allowed": true,
+    "text_fallback_may_claim_exact_visual_fidelity": false,
     "inline_references_secondary": true,
-    "explicit_same_role_reference_overrides_profile_default": true,
     "previous_candidate_reuse_default": false,
-    "style_core_required_for_automatic_recovery": true,
     "style_fidelity_default": "HIGH",
-    "style_medium_lock_default": "REFERENCE",
     "style_core_precedence": "ABSOLUTE_FOR_GLOBAL_VISUAL_GRAMMAR",
     "photorealism_normalization_with_style_core": "DISABLED_UNLESS_EXPLICITLY_REQUESTED"
+  },
+  "style_family_policy": {
+    "mode": "ONE_CORE_PLUS_BOUNDED_SUPPORT",
+    "maximum_style_references": 3,
+    "maximum_support_references": 2,
+    "support_may_override_core": false,
+    "core_only_axes": ["visual_medium", "degree_of_realism", "shape_abstraction"],
+    "preferred_first_pass_support_count": 1
   },
   "workflow_policy": {
     "default_mode": "FRESH_FIRST",
@@ -38,7 +54,8 @@
     "style_recovery_trigger": "STRUCTURE_PASS_AND_STYLE_FAIL",
     "style_recovery_method": "SINGLE_RESTYLE",
     "maximum_restyle_depth": 1,
-    "recovery_reference_roles": ["STRUCTURE_EDIT_TARGET", "STYLE_CORE"],
+    "recovery_reference_roles": ["STRUCTURE_EDIT_TARGET", "STYLE_CORE", "OPTIONAL_STYLE_SUPPORT"],
+    "maximum_support_adapters_in_recovery": 1,
     "automatic_third_pass_allowed": false,
     "automatic_fresh_retry_after_recovery_failure": false
   },
@@ -48,7 +65,8 @@
     "self_test": "skill/scripts/self_test.py"
   },
   "project_policy": {
-    "reference_source": "CHATGPT_PROJECT_FILES_PRIMARY_CURRENT_CONVERSATION_UPLOADS_SECONDARY",
+    "reference_source": "PROJECT_CATALOG_PRIMARY_CURRENT_CHAT_SECONDARY",
+    "visual_binding_assumption": "NEVER_IMPLICIT",
     "manifest_path": "project/AUTHORITY_MANIFEST.example.json",
     "request_example_path": "project/GENERATION_REQUEST.example.json",
     "instructions_path": "project/PROJECT_INSTRUCTIONS.md"

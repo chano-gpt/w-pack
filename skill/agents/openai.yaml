@@ -1,4 +1,4 @@
 interface:
   display_name: "W-Pack"
-  short_description: "Project-source-first image generation with style recovery"
+  short_description: "Transport-aware Project references and style-family control"
   brand_color: "#111111"

@@ -1,36 +1,52 @@
-# Quick start
-
-W-Pack v0.4 is designed for ChatGPT Web, ChatGPT Projects, and ChatGPT Skills.
+# W-Pack v0.5 Quick Start
 
 ## 1. Install the Skill
 
-Upload `skill.zip` to ChatGPT Skills.
+Install the packaged `skill.zip` or the `skill/` directory.
 
-## 2. Configure persistent Project sources
+## 2. Add reusable Project sources
 
-1. Add reusable reference images to the ChatGPT Project.
-2. Copy `project/PROJECT_INSTRUCTIONS.md` into Project instructions.
-3. Define bounded authorities in `project/AUTHORITY_MANIFEST.example.json`.
-4. Put the normal source set in `source_profiles.DEFAULT` and set `default_source_profile` to `DEFAULT`.
-5. Keep one normal STYLE authority in DEFAULT so W-Pack can use it as STYLE_CORE.
+Add the images you want to reuse across chats to the ChatGPT Project. Configure them in `project/AUTHORITY_MANIFEST.example.json`.
 
-The Project sources are then used automatically. You do not need to attach them again in every chat.
-
-## 3. Ask normally
+A recommended DEFAULT profile is:
 
 ```text
-@W-Pack
-푸른 하늘, 여자, 흰 셔츠와 청바지.
-하늘을 보고 한 손으로 머리를 넘긴다.
-정오의 태양, 아래에서 위로 보는 구도, 2:3.
+STYLE_CORE + optional STYLE_SUPPORT + CHARACTER + PROPORTION
 ```
 
-W-Pack uses the Project sources by default.
+Keep the first pass at five references or fewer.
 
-## 4. Optional chat overrides
+## 3. Build STYLE DNA
 
-Attach a current-chat image only when you want a temporary pose, composition, character, item, or style override.
+For each style source, add a concrete `style_signature` and `anti_drift_signature`. W-Pack may derive these from Project images when ChatGPT can inspect them.
 
-## 5. Conditional style recovery
+Do not rely on labels such as “anime” or “cinematic.” Capture medium, edge grammar, abstraction, shading/value, color, material treatment, background behavior, realism level, and anti-drift traits.
 
-W-Pack generates once first. If the structure is good but STYLE_CORE fidelity materially fails, it may perform one style-only restyle using the fresh candidate plus STYLE_CORE. It never recursively restyles or performs an automatic third pass.
+## 4. Understand source binding
+
+Project storage and image-generation visual binding are not the same thing.
+
+W-Pack prefers the actual visual source when it is available to the image-generation path. When direct binding is unverified but ChatGPT can inspect the Project image, W-Pack falls back to source-derived STYLE DNA instead of pretending the image was visually passed through.
+
+## 5. Generate normally
+
+You do not need to say “use the sources” every time.
+
+```text
+@w-pack
+20대 여성, 흰 셔츠와 청바지.
+정오의 푸른 하늘, 아래에서 위로 촬영.
+2:3 비율.
+```
+
+W-Pack resolves DEFAULT sources, transport state, style family, and generation constraints internally.
+
+## 6. Conditional style recovery
+
+The first pass is always fresh. If structure is good but style materially drifts, W-Pack may perform one style-only recovery with:
+
+```text
+STRUCTURE_EDIT_TARGET + STYLE_CORE + optional one STYLE_SUPPORT
+```
+
+There is no recursive restyle or automatic third pass.
