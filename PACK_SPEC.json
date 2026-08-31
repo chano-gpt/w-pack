@@ -2,7 +2,7 @@
   "schema_version": "WPACK_SPEC_v1.3",
   "display_name": "W-Pack",
   "pack_id": "WPACK",
-  "pack_version": "WPACK_v0.5.0-chat-native",
+  "pack_version": "WPACK_v0.5.1-chat-native",
   "scope": "CHATGPT_WEB_PROJECT_IMAGE_GENERATION_HARNESS",
   "repository": "chano-gpt/w-pack",
   "reference_slot_limit": 5,
@@ -37,7 +37,9 @@
     "previous_candidate_reuse_default": false,
     "style_fidelity_default": "HIGH",
     "style_core_precedence": "ABSOLUTE_FOR_GLOBAL_VISUAL_GRAMMAR",
-    "photorealism_normalization_with_style_core": "DISABLED_UNLESS_EXPLICITLY_REQUESTED"
+    "photorealism_normalization_with_style_core": "DISABLED_UNLESS_EXPLICITLY_REQUESTED",
+    "hair_rendering_default": "CLEAN_MASS_WHEN_UNSPECIFIED",
+    "hair_rendering_high_salience_audit": true
   },
   "style_family_policy": {
     "mode": "ONE_CORE_PLUS_BOUNDED_SUPPORT",
@@ -46,6 +48,14 @@
     "support_may_override_core": false,
     "core_only_axes": ["visual_medium", "degree_of_realism", "shape_abstraction"],
     "preferred_first_pass_support_count": 1
+  },
+  "hair_rendering_policy": {
+    "macro_to_micro_order": ["silhouette", "major_locks", "internal_texture", "micro_strands"],
+    "default_micro_strand_density": "SPARSE",
+    "default_flyaway_density": "SPARSE_PHYSICALLY_MOTIVATED",
+    "default_tip_behavior": "GROUPED_NOT_REPEATEDLY_FORKED",
+    "default_highlight_granularity": "LOCK_LEVEL",
+    "source_authority_overrides_default": true
   },
   "workflow_policy": {
     "default_mode": "FRESH_FIRST",
