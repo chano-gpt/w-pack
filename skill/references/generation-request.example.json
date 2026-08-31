@@ -1,21 +1,10 @@
 {
   "schema_version": "WPACK_GENERATION_REQUEST_v1.1",
   "mode": "FRESH",
-  "scene": "A premium editorial fashion portrait in a brutalist concrete interior with late-afternoon directional sunlight.",
+  "scene": "A new scene that keeps the persistent Project visual identity while changing the action and environment.",
   "aspect_ratio": "4:5",
+  "use_default_sources": true,
   "references": [
-    {
-      "source": "PROJECT_AUTHORITY",
-      "id": "STYLE_CORE_01",
-      "role": "STYLE",
-      "influence": ["palette", "texture", "lighting_language", "rendering_language"]
-    },
-    {
-      "source": "PROJECT_AUTHORITY",
-      "id": "CHARACTER_01",
-      "role": "CHARACTER",
-      "influence": ["identity", "facial_features", "hair", "stable_appearance"]
-    },
     {
       "source": "INLINE_AUTHORITY",
       "id": "INLINE_COMPOSITION_01",
@@ -24,10 +13,10 @@
     }
   ],
   "composition": ["medium-full shot", "subject slightly off-center"],
-  "lighting": ["late-afternoon directional sunlight"],
+  "lighting": [],
   "exact_text": null,
   "preserve": [],
-  "avoid": ["reference leakage outside assigned authority roles"],
+  "avoid": ["reference leakage outside assigned authority roles", "photorealistic normalization when the active STYLE reference is non-photographic"],
   "edit_target": null,
   "source_profile": null
 }

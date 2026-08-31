@@ -1,68 +1,78 @@
 ---
 name: w-pack
-description: ChatGPT-native control layer for image generation and image editing with bounded reference-image influence. Use when a user asks ChatGPT to create, restyle, modify, or refine an image using current-chat uploads or reusable Project references, especially with natural-language cues such as "이 느낌으로", "이 사람 그대로", "이 포즈로", "이 구도로", "소스 참고해서", or equivalent requests that need style, character, pose, composition, proportion, or item references kept separate.
+description: ChatGPT-native control layer for image generation and editing with persistent Project references as the default visual source set and current-chat images as optional overrides or add-ons. Use when a user asks ChatGPT to create, restyle, modify, or refine an image with reusable Project sources or explicitly attached references, including requests about style, character, pose, composition, proportion, or item fidelity.
 ---
 
 # W-Pack
 
-Use W-Pack as a lightweight control layer for ChatGPT web and ChatGPT Projects. Optimize for natural conversation first; keep manifests and compiled request objects internal unless they are needed for validation or the user asks to see them.
+Use W-Pack as a lightweight control layer for ChatGPT web and ChatGPT Projects. Treat persistent Project sources as the primary reference path. Treat current-chat image attachments as optional overrides or additions, not as the default workflow.
 
 ## Core workflow
 
-1. Determine whether the request is `FRESH` or `EDIT` from the user's intent.
-2. Resolve only references the user explicitly names, clearly points to, or requests through an explicit Project source profile.
-3. Resolve authority roles from the user's language and context, not from incidental visual content. Supported roles are `STYLE`, `CHARACTER`, `POSE`, `COMPOSITION`, `PROPORTION`, and `ITEM`.
-4. Accept both persistent Project authorities and current-conversation inline authorities. Do not require an inline upload to exist in a Project manifest.
-5. Internally compile scene intent, composition, lighting, text, preserve constraints, avoid constraints, edit target, and selected references.
-6. Validate reference count and authority conflicts. Use no more than 5 generation references and prefer the minimum necessary set.
-7. Invoke ChatGPT's built-in image-generation capability immediately when the request is sufficiently specified. Do not expose internal JSON unless useful for resolving a conflict.
-8. Audit the result silently and surface only material failures.
+1. Determine whether the request is `FRESH` or `EDIT`.
+2. Resolve persistent Project sources first. If the manifest defines `default_source_profile`, activate it automatically. Otherwise activate a profile named `DEFAULT` when it exists.
+3. Disable default Project sources only when the user explicitly requests generation without sources or the request sets `use_default_sources` to false.
+4. Resolve current-chat references only when the user explicitly points to them or clearly assigns an influence. Inline images are secondary to the persistent Project source set.
+5. Assign bounded roles: `STYLE`, `CHARACTER`, `POSE`, `COMPOSITION`, `PROPORTION`, and `ITEM`.
+6. When an explicit inline or per-request reference claims a role already supplied by the default profile, treat the explicit reference as an override for that role unless the user clearly asks to combine both.
+7. Compile scene intent, aspect ratio, composition, lighting, text, preserve constraints, avoid constraints, edit target, active profile, and selected references.
+8. Apply style fidelity rules before generation. An active `STYLE` authority controls the visual medium and rendering domain, not merely colors.
+9. Validate reference count and authority conflicts. Use no more than 5 generation references.
+10. Invoke ChatGPT's built-in image-generation capability immediately when the request is sufficiently specified.
+11. Audit the result silently and surface only material failures.
 
-Read `references/chat-intent-resolution.md` when mapping natural-language reference cues. Read `references/authority-model.md` for authority boundaries. Read `references/generation-policy.md` for fresh generation rules, `references/edit-policy.md` for editing, and `references/source-profiles.md` when a Project default source set is requested.
+Read `references/source-profiles.md` for default-source behavior, `references/authority-model.md` for authority boundaries, `references/generation-policy.md` for style fidelity and fresh generation, `references/edit-policy.md` for editing, and `references/chat-intent-resolution.md` for natural-language mapping.
 
-## Natural-language reference handling
+## Default Project sources
 
-Treat language such as the following as explicit role instructions when the referent is clear:
+Persistent Project sources are active by default. The user does not need to say "use the sources" on every request.
 
-- "이 느낌으로", "이 스타일로" -> `STYLE`
-- "이 사람 그대로", "얼굴 유지" -> `CHARACTER`
-- "이 포즈로" -> `POSE`
-- "이 구도로", "이 배치처럼", "프레이밍 참고" -> `COMPOSITION`
-- "이 비율로", "크기 관계 참고" -> `PROPORTION`
-- "이 옷/제품/소품 그대로" -> `ITEM`
+Use this precedence:
 
-This is intent inference from the user's words. It is allowed. Do not infer an authority role merely because a reference happens to contain a face, pose, object, or notable style.
+1. Explicit per-request user instructions.
+2. Explicit current-chat reference overrides.
+3. Explicitly requested source profile.
+4. Manifest `default_source_profile`.
+5. A profile named `DEFAULT` when present.
 
-If the user says only "참고해서", "소스 참고해서", or equivalent and a Project source profile is explicitly configured for W-Pack, use that profile. If no profile exists and a single current-chat reference is clearly the intended source, use it only when the requested influence is clear from context. Otherwise ask only when the ambiguity materially changes the result.
+A phrase equivalent to "use the sources" confirms the already-default behavior. A phrase equivalent to "without references" or "ignore project sources" disables the default source set for that request.
 
-## Reference sources
+Do not automatically promote every current-chat image to a generation reference. An attachment becomes active only when the user points to it or its intended role is clear from the request.
 
-A reference may be either:
+## Style fidelity and medium lock
 
-- `PROJECT_AUTHORITY`: a persistent Project file optionally defined in an authority manifest.
-- `INLINE_AUTHORITY`: an image attached or clearly identified in the current conversation.
+When an active reference has role `STYLE`, preserve its visual medium, rendering language, stylization level, texture behavior, edge treatment, color behavior, surface treatment, and degree of realism within the allowed scope.
 
-Inline authorities do not need manifest IDs. Assign stable internal IDs such as `INLINE_STYLE_01` only for the current request.
+Do not normalize a stylized, illustrated, painted, anime-like, graphic, print-like, collage-like, 3D, or otherwise non-photographic STYLE reference into generic photorealism unless the user explicitly requests a photographic rendering style.
 
-Project files are a reusable library, not automatic generation inputs. Never pass every Project image merely because it exists.
+Treat photographic terms such as lens length, camera brand, depth of field, low angle, high angle, or telephoto as composition or optical-behavior instructions. They do not override a non-photographic STYLE medium unless the user explicitly asks for photorealism or photography.
+
+Default internal behavior when STYLE is active:
+
+- `style_fidelity`: `HIGH`
+- `medium_lock`: `REFERENCE`
+- `photorealism_normalization`: `DISABLED`
+
+## Reference roles
+
+- `STYLE`: palette, texture, lighting language, typography character, graphic treatment, rendering language, surface treatment, visual medium, stylization level, and degree of realism.
+- `CHARACTER`: identity, facial features, hair, stable appearance traits, and explicitly scoped wardrobe.
+- `POSE`: body arrangement, gesture, stance, limb relationship, and camera-relative orientation.
+- `COMPOSITION`: framing, crop, camera angle, subject placement, layout structure, visual hierarchy, negative space, and broad spatial arrangement.
+- `PROPORTION`: physical scale and relative dimensions.
+- `ITEM`: specified object identity, silhouette, structure, material, and scoped color.
+
+Keep the roles bounded. A STYLE authority does not silently control identity or exact composition, and a CHARACTER authority does not silently control the global rendering style.
 
 ## Modes
 
-Use `FRESH` by default when the user asks for a new image, a remake from references, or a new variation without asking to preserve a previous generated candidate.
+Use `FRESH` for new images and new remakes. Do not silently reuse a previous generated candidate as an input.
 
-Use `EDIT` when the user asks to change an existing image, preserve part of it, continue from it, restyle it, or modify only selected properties.
-
-Inside `EDIT`, classify the operation internally when useful:
-
-- `MODIFY`: change selected properties while preserving the rest.
-- `RESTYLE`: preserve structure/content while changing visual language.
-- `RECOMPOSE`: preserve selected content while changing framing/layout/composition.
-
-Do not require the user to name these modes.
+Use `EDIT` when the user points to a usable existing target and asks to modify, preserve, refine, restyle, continue, or recompose it. Inside `EDIT`, use `MODIFY`, `RESTYLE`, or `RECOMPOSE` internally when helpful.
 
 ## Internal request contract
 
-Use this logical shape before generation. This is an internal contract, not a user-facing form.
+Use this logical shape before generation. Keep it internal unless the user asks to inspect it.
 
 ```json
 {
@@ -70,26 +80,23 @@ Use this logical shape before generation. This is an internal contract, not a us
   "mode": "FRESH",
   "scene": "...",
   "aspect_ratio": "4:5",
+  "use_default_sources": true,
+  "source_profile": null,
   "references": [],
   "composition": [],
   "lighting": [],
   "exact_text": null,
   "preserve": [],
   "avoid": [],
-  "edit_target": null,
-  "source_profile": null
+  "edit_target": null
 }
 ```
 
-Each reference may contain `source`, `id`, `role`, and `influence`. `source` is `PROJECT_AUTHORITY` or `INLINE_AUTHORITY`.
-
 ## Conflict handling
 
-- Let explicit user instructions override profile or manifest defaults when compatible with safety and tool constraints.
-- If two references incompatibly claim the same property, stop and surface the specific conflict instead of guessing.
-- Do not let `STYLE` silently control identity, pose, composition, or item design.
-- Do not let `COMPOSITION` silently control identity, style, wardrobe, or item identity.
-- Do not let `CHARACTER` silently control background, lighting, graphic treatment, or composition.
+- Let explicit user instructions override Project defaults when compatible with safety and tool constraints.
+- When an explicit reference replaces a default authority for the same role, remove the default authority for that role before generation unless the user asks to combine them.
+- If two active references still incompatibly claim the same property, surface the specific conflict instead of guessing.
 - Preserve exact user-specified image text, including spelling, capitalization, punctuation, and line content.
 - If a named Project authority cannot be resolved, state what is missing instead of substituting a visually similar file.
 
@@ -99,18 +106,18 @@ Use ChatGPT's built-in image-generation capability. Do not request API keys, sta
 
 ## Supporting resources
 
-- `references/chat-intent-resolution.md` - natural-language role and mode resolution.
+- `references/source-profiles.md` - default persistent source selection and override behavior.
 - `references/authority-model.md` - authority semantics and influence boundaries.
-- `references/generation-policy.md` - fresh generation and request compilation rules.
+- `references/chat-intent-resolution.md` - natural-language role and mode resolution.
+- `references/generation-policy.md` - fresh generation, style fidelity, and medium lock.
 - `references/edit-policy.md` - edit-target and preservation rules.
-- `references/source-profiles.md` - reusable Project source-profile behavior.
 - `references/audit-policy.md` - post-generation review rules.
 - `references/project-setup.md` - recommended ChatGPT Project configuration.
-- `references/authority-manifest.example.json` - persistent Project-authority template.
+- `references/authority-manifest.example.json` - persistent Project-authority and default-profile template.
 - `references/generation-request.example.json` - request template.
 - `scripts/validate_authorities.py` - deterministic manifest/request validation.
-- `scripts/compile_request.py` - deterministic bounded-request compilation.
-- `scripts/self_test.py` - smoke tests for fresh, inline-reference, profile, composition, and edit flows.
+- `scripts/compile_request.py` - deterministic default-profile resolution and request compilation.
+- `scripts/self_test.py` - smoke tests for default sources, inline overrides, style locks, and edit flows.
 
 ## Script verification
 

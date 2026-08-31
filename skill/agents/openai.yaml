@@ -1,4 +1,4 @@
 interface:
   display_name: "W-Pack"
-  short_description: "Reference-bounded image generation for ChatGPT"
+  short_description: "Project-source-first image generation for ChatGPT"
   brand_color: "#111111"

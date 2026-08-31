@@ -4,39 +4,25 @@ W-Pack is designed for ChatGPT web, ChatGPT Projects, and ChatGPT Skills. No loc
 
 ## 1. Install the Skill
 
-Upload the packaged `skill.zip` to ChatGPT Skills when Skill upload is available in your workspace.
+Upload the packaged `skill.zip` to ChatGPT Skills.
 
-## 2. Optional Project setup
+## 2. Configure persistent Project sources
 
-For reusable image sources in a ChatGPT Project:
+For the intended W-Pack workflow:
 
-1. Add the reference images to the Project.
+1. Add reusable reference images to the ChatGPT Project.
 2. Copy `project/PROJECT_INSTRUCTIONS.md` into the Project instructions.
-3. Optionally maintain reusable authority IDs with `project/AUTHORITY_MANIFEST.example.json`.
-4. Optionally define a Project source profile such as `DEFAULT` for recurring source sets.
+3. Define reusable authorities in `project/AUTHORITY_MANIFEST.example.json`.
+4. Put the normal source set in `source_profiles.DEFAULT` and set `default_source_profile` to `DEFAULT`.
 
-Current-chat images do not need manifest entries.
+The DEFAULT Project source set is then active automatically for every W-Pack image request. You do not need to attach the same images again or repeat "use the sources".
 
-## 3. Use natural language
+## 3. Use chat attachments only when needed
 
-Examples:
+A current-chat image is optional. Use it when you want a temporary override or addition, for example a one-off pose or composition.
 
-```text
-@W-Pack
-20대 여성, 교복, 셀카, 부드러운 빛.
-소스 참고해서 새 이미지로 제작.
-```
+If an explicit inline reference uses the same role as a default Project authority, it overrides that role for the current request while the rest of the DEFAULT Project sources remain active.
 
-```text
-@W-Pack
-첫 번째 첨부 이미지의 느낌만 참고하고,
-두 번째 이미지의 인물은 그대로 유지.
-세 번째 이미지의 구도로 만들어.
-```
+## Style behavior
 
-```text
-@W-Pack
-이 이미지에서 얼굴과 구도는 그대로 두고 옷만 바꿔.
-```
-
-W-Pack resolves these requests into bounded STYLE, CHARACTER, COMPOSITION, ITEM, and edit constraints internally, then uses ChatGPT's built-in image generation.
+When DEFAULT includes a STYLE authority, W-Pack preserves its visual medium and degree of realism. Camera or lens terminology changes perspective or optical behavior and does not turn a stylized source into a photograph unless the user explicitly requests photorealism.

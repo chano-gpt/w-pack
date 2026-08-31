@@ -1,10 +1,14 @@
 {
   "schema_version": "WPACK_AUTHORITY_MANIFEST_v1.0",
+  "default_source_profile": "DEFAULT",
+  "source_profiles": {
+    "DEFAULT": ["STYLE_CORE_01", "CHARACTER_01", "PROPORTION_01"]
+  },
   "authorities": {
     "STYLE_CORE_01": {
       "file": "STYLE_CORE_01.png",
       "role": "STYLE",
-      "allowed_influence": ["palette", "texture", "lighting_language", "graphic_treatment", "rendering_language"],
+      "allowed_influence": ["palette", "texture", "lighting_language", "graphic_treatment", "rendering_language", "surface_treatment", "visual_medium", "stylization_level", "edge_treatment", "degree_of_realism"],
       "forbidden_influence": ["identity", "pose", "composition", "item_identity"]
     },
     "CHARACTER_01": {
@@ -12,6 +16,12 @@
       "role": "CHARACTER",
       "allowed_influence": ["identity", "facial_features", "hair", "stable_appearance"],
       "forbidden_influence": ["background", "lighting", "composition", "graphic_treatment"]
+    },
+    "PROPORTION_01": {
+      "file": "PROPORTION_01.png",
+      "role": "PROPORTION",
+      "allowed_influence": ["proportion", "physical_scale", "body_to_object_ratio", "object_to_object_scale", "relative_dimensions"],
+      "forbidden_influence": ["identity", "style", "pose"]
     },
     "POSE_01": {
       "file": "POSE_01.png",

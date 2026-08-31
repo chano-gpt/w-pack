@@ -1,52 +1,48 @@
 # Authority Model
 
-Every generation reference has one primary authority role. A role limits what the reference may influence. Resolve roles from the user's explicit language or clearly stated intent, not from incidental image content.
+Every active generation reference has one primary authority role. A role limits what the reference may influence. Resolve roles from the Project manifest or the user's explicit intent, not from incidental visual content.
 
 ## STYLE
 
-Allowed: palette, texture, lighting language, typography character, graphic treatment, rendering language, surface treatment.
+Allowed: palette, texture, lighting language, typography character, graphic treatment, rendering language, surface treatment, visual medium, stylization level, edge treatment, and degree of realism.
 
-Forbidden by default: subject identity, exact pose, composition, item identity, factual scene content.
+Forbidden by default: subject identity, exact pose, exact composition, item identity, and unrelated factual scene content.
+
+A STYLE authority is a strong visual anchor. When active, preserve the reference medium and rendering domain. Do not normalize a non-photographic reference into generic photorealism unless the user explicitly requests photography or photorealism.
 
 ## CHARACTER
 
-Allowed: identity, facial features, hair, stable appearance traits, clothing only when explicitly included in the authority scope.
+Allowed: identity, facial features, hair, stable appearance traits, and wardrobe only when explicitly scoped.
 
-Forbidden by default: background, lighting, camera angle, composition, graphic treatment, unrelated items.
+Forbidden by default: background, global lighting, camera angle, composition, global graphic treatment, and unrelated items.
 
 ## POSE
 
-Allowed: body arrangement, gesture, stance, limb relationship, broad camera-relative orientation.
+Allowed: body arrangement, gesture, stance, limb relationship, and broad camera-relative orientation.
 
-Forbidden by default: identity, wardrobe, environment, style, composition outside pose-dependent framing.
+Forbidden by default: identity, wardrobe, environment, style, and composition outside pose-dependent framing.
 
 ## COMPOSITION
 
-Allowed: framing, crop, camera angle, subject placement, layout structure, visual hierarchy, negative space, broad spatial arrangement.
+Allowed: framing, crop, camera angle, subject placement, layout structure, hierarchy, negative space, and broad spatial arrangement.
 
-Forbidden by default: identity, facial features, wardrobe, global style, palette, item identity, exact factual content.
+Forbidden by default: identity, facial features, wardrobe, global style, palette, item identity, and exact factual content.
 
 ## PROPORTION
 
-Allowed: physical scale, body-to-object ratio, object-to-object scale, framing-relevant relative dimensions.
+Allowed: physical scale, body-to-object ratio, object-to-object scale, and framing-relevant relative dimensions.
 
-Forbidden by default: identity, pose details, style, material appearance.
+Forbidden by default: identity, pose details, style, and material appearance.
 
 ## ITEM
 
-Allowed: specified object's identity, silhouette, key structural details, material and color when explicitly part of the item authority.
+Allowed: specified object identity, silhouette, key structural details, material, and color when explicitly scoped.
 
-Forbidden by default: subject identity, pose, environment, global style, composition.
-
-## Reference source types
-
-- `PROJECT_AUTHORITY`: persistent Project reference, optionally governed by a manifest.
-- `INLINE_AUTHORITY`: image attached or clearly identified in the current conversation. It may receive an ephemeral internal ID and does not require a manifest entry.
+Forbidden by default: subject identity, pose, environment, global style, and composition.
 
 ## Scope rules
 
-- One image may serve multiple roles only when the user explicitly assigns or clearly requests multiple independent influences.
-- Treat multiple roles as separate bounded authorities, not unrestricted permission for the image to control everything.
-- When a Project manifest defines narrower `allowed_influence` or extra `forbidden_influence`, the narrower rule wins.
-- Never copy incidental elements from a reference merely because they are visible.
-- Natural-language cues such as "이 느낌으로", "이 포즈로", or "이 구도로" are valid role instructions when their referent is clear.
+- Project authorities may be automatically activated through the default source profile.
+- Current-chat authorities are optional and secondary.
+- If an explicit per-request authority claims the same role as a default Project authority, it overrides that default role unless the user asks to combine them.
+- Never copy incidental elements merely because they are visible.

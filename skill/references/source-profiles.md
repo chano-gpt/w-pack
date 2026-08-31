@@ -1,31 +1,41 @@
 # Source Profiles
 
-Source profiles are optional Project-level shortcuts for recurring reference sets. They exist to support conversational requests such as "소스 참고해서 제작" without forcing the user to repeat authority IDs.
+Source profiles are the primary persistent reference mechanism for W-Pack in ChatGPT Projects.
 
-## Behavior
+## Default behavior
 
-A profile maps a profile name to a bounded set of Project authorities. Example:
+Project sources are active by default. The user should not need to attach images in every chat or repeat a phrase asking W-Pack to use the sources.
+
+Resolve the active profile in this order:
+
+1. If `use_default_sources` is false, activate no automatic Project profile.
+2. If the request names `source_profile`, use that profile.
+3. Otherwise use manifest `default_source_profile`.
+4. Otherwise use a profile named `DEFAULT` when present.
+
+A profile maps a profile name to a bounded set of Project authority IDs. Example:
 
 ```json
 {
-  "DEFAULT": ["STYLE_CORE_01", "CHARACTER_01", "PROPORTION_01"]
+  "default_source_profile": "DEFAULT",
+  "source_profiles": {
+    "DEFAULT": ["STYLE_CORE_01", "CHARACTER_01", "PROPORTION_01"]
+  }
 }
 ```
 
-Use a profile only when it is explicitly configured in the Project and the user's language requests Project/default sources. Do not invent a profile from nearby files or upload order.
+## Inline references
 
-## Precedence
+Current-chat image attachments are secondary. Do not make them the default reference path.
 
-1. Explicit per-request user instructions
-2. Explicit inline authority assignments
-3. Requested source profile
-4. Manifest defaults
+When the user explicitly assigns an inline reference to a role already provided by the active profile, use the inline reference as the per-request override for that role. Keep the remaining Project authorities active.
 
-A profile never grants unrestricted influence. Every referenced authority remains bound to its own role and influence scope.
+When the inline reference has a different role, add it if the total active reference count remains within the limit.
+
+Do not treat an unmentioned chat attachment as permission to replace the Project source set.
 
 ## Limits
 
-- The final generation request still has a maximum of 5 references.
-- Prefer fewer references when the user's request does not need every profile member.
-- If a profile reference is missing, do not silently replace it with another Project image.
-- Current-chat inline references may be combined with profile references when the total remains within the limit and roles do not conflict.
+- Maximum 5 active generation references after profile expansion and overrides.
+- Keep every authority bound to its declared role and allowed influence.
+- If a profile authority is missing, do not silently replace it with another Project image.

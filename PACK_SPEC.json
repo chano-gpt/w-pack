@@ -18,10 +18,17 @@
   "generation_policy": {
     "fresh_generation_default": true,
     "previous_candidate_reuse_default": false,
+    "project_sources_default_active": true,
+    "default_profile_fallback_name": "DEFAULT",
+    "inline_references_secondary": true,
+    "explicit_same_role_reference_overrides_profile_default": true,
     "inline_reference_manifest_required": false,
     "authority_scope_must_be_explicit_or_resolved_from_user_language": true,
     "reference_conflicts_must_fail_closed": true,
-    "project_source_profiles_supported": true
+    "project_source_profiles_supported": true,
+    "style_fidelity_default": "HIGH",
+    "style_medium_lock_default": "REFERENCE",
+    "photorealism_normalization_with_style_reference": "DISABLED_UNLESS_EXPLICITLY_REQUESTED"
   },
   "validation": {
     "manifest_and_request_validator": "skill/scripts/validate_authorities.py",
@@ -29,7 +36,7 @@
     "semantic_fallback_allowed_when_script_execution_unavailable": true
   },
   "project_policy": {
-    "reference_source": "CHATGPT_PROJECT_FILES_OR_CURRENT_CONVERSATION_UPLOADS",
+    "reference_source": "CHATGPT_PROJECT_FILES_PRIMARY_CURRENT_CONVERSATION_UPLOADS_SECONDARY",
     "manifest_path": "project/AUTHORITY_MANIFEST.example.json",
     "request_example_path": "project/GENERATION_REQUEST.example.json",
     "instructions_path": "project/PROJECT_INSTRUCTIONS.md"

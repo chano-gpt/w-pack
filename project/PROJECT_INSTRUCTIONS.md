@@ -2,64 +2,43 @@
 
 Use W-Pack for image-generation and image-editing requests in this Project.
 
-## Chat-first behavior
+## Source-first behavior
 
-Treat natural language as the primary interface. Do not require the user to write JSON, authority IDs, or generation modes when their intent is already clear.
+Persistent Project sources are the primary reference path and are active by default.
 
-Resolve mode as:
-
-- `FRESH` for new images and remakes from references.
-- `EDIT` when the user points to an existing image and asks to modify, preserve, refine, restyle, or recompose it.
+- Automatically activate manifest `default_source_profile` for each W-Pack request.
+- If no explicit default is set but a profile named `DEFAULT` exists, activate `DEFAULT`.
+- The user does not need to repeat "use the sources" on every request.
+- Disable automatic Project sources only when the user explicitly asks to ignore references or generate from the prompt alone.
+- Treat current-chat image attachments as optional per-request overrides or additions, not as the main workflow.
 
 ## Reference authority
 
-Every reference used for generation must have a bounded role:
+Every active reference has a bounded role:
 
-- `STYLE`: visual language only
-- `CHARACTER`: subject identity and stable appearance only
-- `POSE`: pose and body arrangement only
-- `COMPOSITION`: framing, crop, camera angle, placement, hierarchy, and negative space only
-- `PROPORTION`: relative physical scale only
-- `ITEM`: specified object identity and structure only
+- `STYLE`: visual medium, rendering language, palette, texture, lighting language, surface treatment, stylization level, and degree of realism.
+- `CHARACTER`: identity and stable appearance.
+- `POSE`: pose and body arrangement.
+- `COMPOSITION`: framing, crop, camera angle, placement, hierarchy, and negative space.
+- `PROPORTION`: relative physical scale.
+- `ITEM`: specified object identity and structure.
 
-Natural-language cues may assign roles. Examples:
+When an explicit per-request or inline reference claims a role already supplied by the default profile, replace the default authority for that role unless the user clearly asks to combine them. Keep the other default Project authorities active.
 
-- "이 느낌으로" -> STYLE
-- "이 사람 그대로" -> CHARACTER
-- "이 포즈로" -> POSE
-- "이 구도로" -> COMPOSITION
-- "이 비율로" -> PROPORTION
-- "이 제품/옷 참고" -> ITEM
+## Style fidelity
 
-Do not infer a role merely because an image visibly contains a face, pose, object, or notable style.
+An active STYLE authority is a strong visual anchor. Preserve its visual medium, rendering language, stylization level, texture behavior, edge treatment, color behavior, and degree of realism.
 
-## Project and inline references
+Do not normalize stylized, illustrated, painted, anime-like, graphic, print-like, collage-like, 3D, or other non-photographic STYLE sources into generic photorealism unless the user explicitly requests photography or photorealism.
 
-Prefer authority IDs defined in the Project's authority manifest for reusable sources. Also accept current-chat images directly as inline authorities; inline images do not need manifest entries.
-
-Use no more than five generation references and prefer the minimum necessary set.
-
-If a Project source profile such as `DEFAULT` is configured, phrases such as "소스 참고해서" may activate that profile. A profile never grants unrestricted influence and does not override explicit per-request instructions.
+Photographic terms such as camera brand, focal length, telephoto, depth of field, or camera angle control optical behavior and composition. They do not override the STYLE medium by themselves.
 
 ## Generation behavior
 
-Before generating, internally separate:
+Resolve mode as `FRESH` for new images and `EDIT` for modification of a usable existing target.
 
-- scene intent
-- reference authorities
-- composition and framing
-- lighting
-- exact text
-- must-preserve constraints
-- must-avoid constraints
-- edit target when present
+Before generating, internally separate scene intent, Project source authorities, inline overrides, composition, lighting, exact text, preserve constraints, avoid constraints, and edit target.
 
-Generate fresh by default. Do not silently use previous generated outputs as references.
-
-In EDIT mode, preserve explicitly named target properties and change only the requested properties as much as practical.
-
-When exact image text is specified, preserve the text exactly.
-
-If references conflict on the same property, surface the specific conflict briefly instead of guessing.
+Use no more than five active references after default-profile expansion and overrides.
 
 Use ChatGPT's built-in image-generation capability. Do not ask for an API key, Codex OAuth, or a local image-generation runtime.
