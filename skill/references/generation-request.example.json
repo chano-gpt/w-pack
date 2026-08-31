@@ -1,15 +1,19 @@
 {
-  "schema_version": "WPACK_GENERATION_REQUEST_v1.1",
+  "schema_version": "WPACK_GENERATION_REQUEST_v1.2",
   "mode": "FRESH",
   "scene": "A new scene using the persistent Project character and visual grammar.",
   "aspect_ratio": "4:5",
   "use_default_sources": true,
+  "combine_style_sources": false,
   "references": [],
   "composition": ["low-angle medium-full shot"],
   "lighting": ["clear noon sunlight"],
   "exact_text": null,
   "preserve": [],
-  "avoid": ["reference leakage outside assigned authority roles"],
+  "avoid": [
+    "reference leakage outside assigned authority roles",
+    "generic dense flyaway hair and repeatedly forked strand tips unless source-authorized"
+  ],
   "edit_target": null,
   "source_profile": null
 }
