@@ -1,35 +1,44 @@
 # W-Pack
 
-### 面向 ChatGPT 的 Project-source-first 图像生成控制层
+### 面向 ChatGPT 的参考图控制型图像生成 Harness
 
 [English](./README.md) · [한국어](./README.ko.md) · [日本語](./README.ja.md) · **简体中文** · [繁體中文](./README.zh-TW.md)
 
-W-Pack v0.4 默认使用 ChatGPT Project 中的持久参考图，并通过受限的 authority 角色控制风格、人物、姿势、构图、比例和物体的影响范围。
+W-Pack v0.5.1 将参考图的 **authority（允许控制什么）** 与 **transport（是否真的作为视觉输入传给图像模型）** 分开处理。
 
-## v0.4 核心变化
+## v0.5.1
 
-- 自动启用 Project `DEFAULT` 源
-- 将唯一的 STYLE 参考内部提升为 `STYLE_CORE`
-- 强化媒介、写实程度、轮廓、抽象方式、明暗、色彩、纹理和背景渲染的一致性
-- 首先只进行一次 FRESH 生成
-- 仅当“结构通过、风格失败”时执行一次 `SINGLE_RESTYLE`
-- 禁止递归 restyle，也不会自动进行第三次生成
-- 当前聊天上传的图片仅作为临时 override / add-on
+- Project 中存在文件不再等同于 `VISUAL_BOUND`。
+- STYLE 解析为 1 个 `STYLE_CORE` + 最多 2 个 `STYLE_SUPPORT`。
+- 直接视觉绑定无法确认时，可使用 `style_signature` / `anti_drift_signature` 形式的 STYLE DNA。
+- 头发新增独立的高权重风格轴 `hair_rendering_grammar`。
+- 默认 `CLEAN_MASS` 抑制密集碎发光环、反复分叉的发梢、随机穿过面部的细发以及线状单发高光。
+- 只有“结构通过、风格失败”时才允许执行一次 `SINGLE_RESTYLE`。
+
+## STYLE family
+
+`STYLE_CORE` 控制全局媒介、写实度、形状抽象、边缘、明暗、颜色、表面、背景以及可见头发的渲染语法。`STYLE_SUPPORT` 只能作用于声明的 support domain，不能覆盖 CORE 的媒介、写实度或形状抽象。
+
+## Hair rendering
+
+默认顺序：
 
 ```text
-Project DEFAULT sources
-        ↓
-   FRESH generation
-        ↓
- structure/style audit
-     /          \
-  PASS       style FAIL
-   ↓              ↓
- DONE       SINGLE RESTYLE
+silhouette → major grouped locks → internal texture → sparse micro-strands
 ```
 
-恢复阶段只使用两个角色：新生成的候选图作为 `STRUCTURE_EDIT_TARGET`，STYLE_CORE 作为唯一风格 authority。保持人物、姿势、构图、相机、空间关系、物体数量/接触和场景条件，只改变渲染风格。
+如果权威参考图明确包含卷曲、毛躁、湿发、风吹或大量独立发丝，则以参考图为准。
 
-`85mm`、长焦、低机位等术语只影响光学和构图，不会把非写实 STYLE_CORE 自动变成照片。
+## Recovery
 
-当前版本：`WPACK_v0.4.0-chat-native`
+自动恢复要求：结构 PASS、风格 FAIL、恰好一个 STYLE_CORE，并且 STYLE_CORE 已 `VISUAL_BOUND` 或具有可用 STYLE DNA。
+
+```text
+STRUCTURE_EDIT_TARGET + STYLE_CORE + optional one relevant STYLE_SUPPORT
+```
+
+禁止递归 restyle 和自动第三次生成。
+
+详细说明：[`QUICKSTART.md`](./QUICKSTART.md) / [English README](./README.md)
+
+当前版本：**`WPACK_v0.5.1-chat-native`**
