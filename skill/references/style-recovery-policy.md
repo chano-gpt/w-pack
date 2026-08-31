@@ -11,7 +11,7 @@ Run `SINGLE_RESTYLE` only when:
 - `structure_status=PASS`
 - `style_status=FAIL`
 
-Do not recover with restyle when structure fails. Structure includes required subject/content, composition, camera, pose, geometry, object count, contact, scene conditions, and exact text placement/content when relevant.
+Do not recover with restyle when structure fails. Structure includes required subject/content, composition, camera, pose, geometry, object count, contact, scene conditions, hairstyle geometry, and exact text placement/content when relevant.
 
 ## Recovery references
 
@@ -30,15 +30,20 @@ Preserve the structure target's:
 - pose and body arrangement
 - composition, crop, camera angle, and spatial relationships
 - object count, scale, ownership, contact, and scene conditions
+- hairstyle geometry: length, parting, fringe/bang shape, volume, direction, and major lock placement
 - exact text content when present
 
 ## Allowed change
 
 Change rendering style only. Apply STYLE_CORE global visual grammar across subject and background.
 
+When hair rendering is a failed axis, change only its rendering grammar: lock grouping, strand density, silhouette noise, tip branching, flyaway density, and highlight granularity. Preserve the hairstyle itself.
+
+Use the compact positive hair clause from `hair-rendering-policy.md` unless the STYLE_CORE clearly requires another grammar.
+
 ## Prohibited changes
 
-Do not recompose, crop, rotate, mirror, zoom, add, remove, replace, duplicate, redesign, or reinterpret scene content.
+Do not recompose, crop, rotate, mirror, zoom, add, remove, replace, duplicate, redesign, or reinterpret scene content. Do not invent a new hairstyle while fixing hair rendering.
 
 ## Pass limit
 
