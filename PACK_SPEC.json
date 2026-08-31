@@ -21,7 +21,14 @@
     "UNVERIFIED_PROJECT_SOURCE",
     "UNAVAILABLE"
   ],
+  "manifest_schema": "WPACK_AUTHORITY_MANIFEST_v1.1",
+  "compatible_manifest_schemas": ["WPACK_AUTHORITY_MANIFEST_v1.0", "WPACK_AUTHORITY_MANIFEST_v1.1"],
   "request_schema": "WPACK_GENERATION_REQUEST_v1.2",
+  "compatible_request_schemas": [
+    "WPACK_GENERATION_REQUEST_v1.0",
+    "WPACK_GENERATION_REQUEST_v1.1",
+    "WPACK_GENERATION_REQUEST_v1.2"
+  ],
   "compiled_request_schema": "WPACK_COMPILED_REQUEST_v1.3",
   "style_audit_schema": "WPACK_STYLE_AUDIT_v1.1",
   "style_recovery_schema": "WPACK_STYLE_RECOVERY_REQUEST_v1.1",
@@ -38,6 +45,17 @@
     "style_fidelity_default": "HIGH",
     "style_core_precedence": "ABSOLUTE_FOR_GLOBAL_VISUAL_GRAMMAR",
     "photorealism_normalization_with_style_core": "DISABLED_UNLESS_EXPLICITLY_REQUESTED",
+    "style_fingerprint_axes": [
+      "visual_medium",
+      "degree_of_realism",
+      "edge_grammar",
+      "shape_abstraction",
+      "value_structure",
+      "color_behavior",
+      "surface_treatment",
+      "background_rendering",
+      "hair_rendering_grammar"
+    ],
     "hair_rendering_default": "CLEAN_MASS_WHEN_UNSPECIFIED",
     "hair_rendering_high_salience_audit": true
   },
@@ -47,7 +65,9 @@
     "maximum_support_references": 2,
     "support_may_override_core": false,
     "core_only_axes": ["visual_medium", "degree_of_realism", "shape_abstraction"],
-    "preferred_first_pass_support_count": 1
+    "preferred_first_pass_support_count": 1,
+    "inline_style_replaces_project_family_by_default": true,
+    "combine_style_sources_requires_explicit_request": true
   },
   "hair_rendering_policy": {
     "macro_to_micro_order": ["silhouette", "major_locks", "internal_texture", "micro_strands"],
@@ -63,6 +83,7 @@
     "conditional_style_recovery": true,
     "style_recovery_trigger": "STRUCTURE_PASS_AND_STYLE_FAIL",
     "style_recovery_method": "SINGLE_RESTYLE",
+    "style_recovery_requires_visual_binding_or_style_dna": true,
     "maximum_restyle_depth": 1,
     "recovery_reference_roles": ["STRUCTURE_EDIT_TARGET", "STYLE_CORE", "OPTIONAL_STYLE_SUPPORT"],
     "maximum_support_adapters_in_recovery": 1,
