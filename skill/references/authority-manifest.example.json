@@ -1,43 +1,68 @@
 {
-  "schema_version": "WPACK_AUTHORITY_MANIFEST_v1.0",
+  "schema_version": "WPACK_AUTHORITY_MANIFEST_v1.1",
   "default_source_profile": "DEFAULT",
   "source_profiles": {
-    "DEFAULT": ["STYLE_CORE_01", "CHARACTER_01", "PROPORTION_01"]
+    "DEFAULT": ["STYLE_CORE_01", "STYLE_SUPPORT_01", "CHARACTER_01", "PROPORTION_01"]
   },
   "authorities": {
     "STYLE_CORE_01": {
       "file": "STYLE_CORE_01.png",
       "role": "STYLE",
+      "style_role": "CORE",
+      "transport_state": "UNVERIFIED_PROJECT_SOURCE",
       "allowed_influence": [
         "palette", "texture", "lighting_language", "graphic_treatment",
         "rendering_language", "surface_treatment", "visual_medium",
-        "stylization_level", "edge_treatment", "shape_abstraction",
-        "value_structure", "color_behavior", "background_rendering",
-        "degree_of_realism"
+        "stylization_level", "edge_treatment", "edge_grammar",
+        "shape_abstraction", "value_structure", "color_behavior",
+        "background_rendering", "degree_of_realism", "hair_rendering_grammar"
       ],
-      "forbidden_influence": ["identity", "pose", "composition", "item_identity"]
+      "forbidden_influence": ["identity", "pose", "composition", "item_identity"],
+      "style_signature": [
+        "Preserve the source medium, contour hierarchy, shape abstraction, value structure, and degree of realism.",
+        "Render visible hair as coherent grouped locks with source-matched silhouette, strand density, tip behavior, and highlight granularity."
+      ],
+      "anti_drift_signature": [
+        "Do not normalize the source into generic photorealism.",
+        "Do not add dense flyaway halos, repeatedly forked strand tips, or thread-like per-strand highlights unless present in the source."
+      ]
+    },
+    "STYLE_SUPPORT_01": {
+      "file": "STYLE_SUPPORT_01.png",
+      "role": "STYLE",
+      "style_role": "SUPPORT",
+      "transport_state": "UNVERIFIED_PROJECT_SOURCE",
+      "allowed_influence": ["palette", "texture", "surface_treatment", "value_structure", "color_behavior", "background_rendering"],
+      "support_domains": ["color_behavior", "value_structure", "surface_treatment", "background_rendering"],
+      "forbidden_influence": ["identity", "pose", "composition", "item_identity", "visual_medium", "degree_of_realism", "shape_abstraction"],
+      "style_signature": ["Use only the declared support domains as a bounded adapter."],
+      "anti_drift_signature": ["Never override STYLE_CORE medium, realism, or shape abstraction."]
     },
     "CHARACTER_01": {
       "file": "CHARACTER_01.png",
       "role": "CHARACTER",
+      "transport_state": "UNVERIFIED_PROJECT_SOURCE",
       "allowed_influence": ["identity", "facial_features", "hair", "stable_appearance"],
       "forbidden_influence": ["background", "lighting", "composition", "graphic_treatment"]
     },
     "PROPORTION_01": {
       "file": "PROPORTION_01.png",
       "role": "PROPORTION",
+      "transport_state": "UNVERIFIED_PROJECT_SOURCE",
       "allowed_influence": ["proportion", "physical_scale", "body_to_object_ratio", "object_to_object_scale", "relative_dimensions"],
       "forbidden_influence": ["identity", "style", "pose"]
     },
     "POSE_01": {
       "file": "POSE_01.png",
       "role": "POSE",
+      "transport_state": "UNVERIFIED_PROJECT_SOURCE",
       "allowed_influence": ["body_arrangement", "gesture", "stance", "camera_relative_orientation"],
       "forbidden_influence": ["identity", "wardrobe", "environment", "style"]
     },
     "COMPOSITION_01": {
       "file": "COMPOSITION_01.png",
       "role": "COMPOSITION",
+      "transport_state": "UNVERIFIED_PROJECT_SOURCE",
       "allowed_influence": ["framing", "crop", "camera_angle", "subject_placement", "visual_hierarchy", "negative_space"],
       "forbidden_influence": ["identity", "style", "item_identity"]
     }
