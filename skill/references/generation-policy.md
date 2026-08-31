@@ -4,11 +4,15 @@
 
 Compile and generate one fresh candidate first. Do not perform two image-generation passes by default.
 
-Resolve persistent sources before optional inline references. Resolve a singular STYLE authority as STYLE_CORE when possible.
+Resolve persistent sources before optional inline references. Resolve the active STYLE family as exactly one STYLE_CORE plus zero to two bounded STYLE_SUPPORT adapters.
 
-## STYLE_CORE contract
+Verify reference transport independently from authority selection. Project membership is not proof of direct visual binding.
 
-Preserve the STYLE_CORE global visual grammar, including medium, stylization level, contour behavior, abstraction, shading/value structure, color behavior, texture, background rendering, degree of realism, and hair rendering grammar when visible hair makes that axis observable.
+## STYLE family contract
+
+Preserve STYLE_CORE global visual grammar, including medium, stylization level, contour behavior, abstraction, shading/value structure, color behavior, texture, background rendering, degree of realism, and hair rendering grammar when visible hair makes that axis observable.
+
+Apply STYLE_SUPPORT only inside its declared support domains. A support source must never override STYLE_CORE medium, realism level, shape abstraction, or a conflicting core decision.
 
 Do not convert a non-photographic STYLE_CORE into generic photorealism unless explicitly requested.
 
@@ -31,9 +35,11 @@ Do not inject the entire anti-signature list into the generation instruction unl
 ## Reference selection
 
 - Maximum five first-pass generation references.
+- Maximum three STYLE references: one CORE plus up to two SUPPORT.
 - Prefer the configured Project profile.
 - Do not add visually similar Project files merely because they look relevant.
 - Do not substitute missing named authorities.
+- Do not claim exact visual fidelity from text-only fallback.
 
 ## Composition
 
@@ -45,4 +51,4 @@ Preserve exact text spelling, capitalization, punctuation, and requested line co
 
 ## Recovery handoff
 
-After the fresh candidate, use `audit-policy.md`. Invoke `style-recovery-policy.md` only when structure passes and style fails.
+After the fresh candidate, use `audit-policy.md`. Invoke `style-recovery-policy.md` only when structure passes, style fails, and STYLE_CORE has confirmed visual binding or usable STYLE DNA.
