@@ -1,21 +1,30 @@
 # W-Pack
 
-### Geração de imagens Project-source-first para ChatGPT
+### Controle de referências para geração de imagens no ChatGPT
 
 [English](./README.md) · [한국어](./README.ko.md) · [日本語](./README.ja.md) · **Português (Brasil)**
 
-O W-Pack v0.4 usa por padrão as referências persistentes de um Project do ChatGPT e mantém separadas as autoridades de estilo, personagem, pose, composição, proporção e item.
+O W-Pack v0.5.1 separa a **autoridade** de uma referência (o que ela pode controlar) do **transporte** (se a imagem realmente chegou ao modelo de geração).
 
-## Principais mudanças da v0.4
+## v0.5.1
 
-- O perfil `DEFAULT` do Project é ativado automaticamente.
-- Uma única referência STYLE é promovida internamente a `STYLE_CORE`.
-- Meio visual, nível de realismo, contornos, abstração, valores/sombras, cor, textura e fundo recebem proteção de fidelidade.
-- O fluxo sempre começa com uma única geração FRESH.
-- Somente quando a estrutura passa e o estilo falha é permitido um único `SINGLE_RESTYLE`.
-- Não há restyle recursivo nem terceira geração automática.
-- Imagens anexadas no chat funcionam como overrides ou complementos temporários.
+- Um arquivo existente no Project não é tratado automaticamente como `VISUAL_BOUND`.
+- STYLE é resolvido como um `STYLE_CORE` e até dois `STYLE_SUPPORT` limitados.
+- Quando o vínculo visual direto não pode ser confirmado, STYLE DNA pode ser usado por `style_signature` e `anti_drift_signature`.
+- Cabelo passa a ser auditado como o eixo independente `hair_rendering_grammar`.
+- O fallback `CLEAN_MASS` reduz halos de fios soltos, pontas repetidamente bifurcadas, fios aleatórios atravessando o rosto e highlights finos por fio quando a fonte não exige esse comportamento.
+- Apenas um `SINGLE_RESTYLE` é permitido quando a estrutura passa e o estilo falha.
 
-Na recuperação, apenas o candidato recém-gerado (`STRUCTURE_EDIT_TARGET`) e o STYLE_CORE são usados. Identidade, pose, composição, câmera, relações espaciais, objetos e condições da cena são preservados; apenas o estilo de renderização muda.
+## Recuperação
 
-Versão atual: `WPACK_v0.4.0-chat-native`
+A recuperação automática exige exatamente um STYLE_CORE e que ele esteja `VISUAL_BOUND` ou possua STYLE DNA utilizável.
+
+```text
+STRUCTURE_EDIT_TARGET + STYLE_CORE + optional one relevant STYLE_SUPPORT
+```
+
+Não há restyle recursivo nem terceira geração automática.
+
+Detalhes: [`QUICKSTART.md`](./QUICKSTART.md) / [English README](./README.md)
+
+Versão atual: **`WPACK_v0.5.1-chat-native`**

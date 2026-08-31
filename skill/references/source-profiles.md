@@ -9,13 +9,13 @@ Use Project source profiles as W-Pack's primary persistent reference mechanism.
 3. Otherwise use manifest `default_source_profile`.
 4. Otherwise use a profile named `DEFAULT` when present.
 
-Example:
+Recommended v0.5.1 profile:
 
 ```json
 {
   "default_source_profile": "DEFAULT",
   "source_profiles": {
-    "DEFAULT": ["STYLE_CORE_01", "CHARACTER_01", "PROPORTION_01"]
+    "DEFAULT": ["STYLE_CORE_01", "STYLE_SUPPORT_01", "CHARACTER_01", "PROPORTION_01"]
   }
 }
 ```
@@ -27,11 +27,17 @@ The user does not need to repeat a phrase such as "use the sources".
 Treat current-chat images as secondary.
 
 - Activate an inline image only when the user points to it or its intended influence is clear.
-- If an inline reference claims the same role as a default Project authority, replace that default role for the current request unless the user requests combination.
-- If inline STYLE replaces Project STYLE, the inline STYLE becomes STYLE_CORE for that request.
-- Keep unaffected Project authorities active.
+- For non-STYLE roles, an explicit inline reference replaces the default Project authority of the same role for that request.
+- By default, any explicit inline STYLE replaces the entire Project style family for that request.
+- Keep unaffected Project non-STYLE authorities active.
 - Do not promote an unmentioned attachment into the source set.
+
+## Combining style sources
+
+Set `combine_style_sources=true` only when the user explicitly wants the Project style family and current-chat STYLE references combined.
+
+The resolved family must still contain exactly one STYLE_CORE and no more than two STYLE_SUPPORT references. Inline supports must declare `style_role: "SUPPORT"` and a bounded influence list. Do not silently turn an extra style into a second CORE.
 
 ## Limits
 
-Keep at most five active generation references after profile expansion and overrides. Keep exactly one STYLE authority in ordinary default profiles so automatic style recovery can resolve a singular STYLE_CORE.
+Keep at most five active generation references after profile expansion and overrides. Within that total, allow at most three STYLE references: one CORE and up to two SUPPORT adapters.

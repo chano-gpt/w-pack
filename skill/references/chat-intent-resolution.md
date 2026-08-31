@@ -30,10 +30,21 @@ Equivalent language in any language should map the same way.
 An inline image is optional and secondary.
 
 - Activate it when explicitly referenced or when its intended role is clear.
-- Replace the same default role for the current request unless combination is explicit.
-- If inline STYLE replaces Project STYLE, promote it to STYLE_CORE internally.
+- For non-STYLE roles, replace the same default Project role for the current request unless combination is explicitly requested.
+- By default, an explicit inline STYLE replaces the entire Project STYLE family for that request.
+- If the inline STYLE is the only active STYLE, infer it as STYLE_CORE.
+- Combine Project and inline STYLE only when the user explicitly asks to mix/combine styles; then set `combine_style_sources=true` and keep exactly one CORE plus bounded SUPPORT sources.
 - Do not infer unrestricted influence from the whole image.
+
+## Hair intent
+
+Treat hairstyle requests and hair-rendering requests separately when possible.
+
+- length, parting, fringe, curl pattern, tied/untied state, and overall silhouette are primarily CHARACTER/structure intent.
+- strand density, flyaways, tip behavior, lock grouping, edge softness, and highlight granularity are hair rendering grammar and normally belong to STYLE.
+
+Explicit user wording overrides the default `CLEAN_MASS` fallback.
 
 ## Recovery intent
 
-Automatic style recovery does not require the user to ask for "two stages". It is an internal fallback only after a fresh candidate has acceptable structure but materially fails STYLE_CORE fidelity.
+Automatic style recovery does not require the user to ask for "two stages". It is an internal fallback only after a fresh candidate has acceptable structure but materially fails style fidelity, with exactly one usable STYLE_CORE.

@@ -1,16 +1,16 @@
 <p align="center">
-  <img src="./assets/w-pack-hero.webp" alt="W-Pack — Project-source-first image generation for ChatGPT" width="100%" />
+  <img src="./assets/w-pack-hero.webp" alt="W-Pack — reference control for ChatGPT image generation" width="100%" />
 </p>
 
 <div align="center">
 
 # W-Pack
 
-### Project-source-first image generation for ChatGPT
+### Reference-aware image generation control for ChatGPT
 
-**Persistent references by default. Bounded authorities. Conditional style recovery when the first pass drifts.**
+**Persistent Project sources. Explicit transport states. One STYLE_CORE with bounded STYLE_SUPPORT. High-salience hair control.**
 
-[![Version](https://img.shields.io/badge/version-v0.4.0-111111?style=flat-square)](#project-status)
+[![Version](https://img.shields.io/badge/version-v0.5.1-111111?style=flat-square)](#project-status)
 [![ChatGPT](https://img.shields.io/badge/ChatGPT-Web%20%26%20Projects-111111?style=flat-square)](#quick-start)
 [![Skill](https://img.shields.io/badge/ChatGPT-Skill-111111?style=flat-square)](./skill)
 [![No API Key](https://img.shields.io/badge/API%20key-not%20required-111111?style=flat-square)](#how-it-works)
@@ -21,110 +21,153 @@
 
 ---
 
-W-Pack is a ChatGPT-native control layer for image generation and editing. It adapts the core Z-Pack ideas—bounded visual authorities, fresh generation, fail-closed reference handling, and deliberate style control—to ChatGPT Web and Projects.
+W-Pack is a ChatGPT-native control layer for image generation and editing. It separates three problems that are often mixed together: **what a reference is allowed to control, whether that reference is actually transported to the image model, and how style fidelity is audited/recovered.**
 
-## What changed in v0.4
+## What changed in v0.5.1
 
-- **Project sources are the default** — reusable Project references are active without repeating “use the sources.”
-- **STYLE_CORE** — a singular active STYLE reference becomes the global visual-grammar anchor.
-- **Stronger style fidelity** — medium, realism level, contours, abstraction, shading/value, color, texture, and background rendering are protected.
-- **Conditional two-stage recovery** — W-Pack generates once first; only a structure-good/style-bad result may receive one style-only restyle.
-- **No recursive editing loop** — maximum restyle depth is one and there is no automatic third pass.
-- **Inline images stay secondary** — current-chat attachments are temporary overrides/add-ons, not the normal source path.
+- **Transport-aware references** — Project membership is no longer treated as proof that the image model received the source visually.
+- **STYLE family model** — exactly one `STYLE_CORE`, plus zero to two bounded `STYLE_SUPPORT` adapters.
+- **STYLE DNA fallback** — inspectable Project styles can be converted into high-specificity `style_signature` / `anti_drift_signature` profiles when direct binding is unverified.
+- **Hair rendering grammar** — visible hair is now a dedicated high-salience style axis rather than generic texture.
+- **CLEAN_MASS fallback** — suppresses dense flyaway halos, repeatedly split tips, random face-crossing wisps, and thread-like strand highlights when the source does not call for them.
+- **Conditional single recovery** — structure-good/style-bad outputs may receive one restyle pass using `STRUCTURE_EDIT_TARGET + STYLE_CORE + optional one relevant STYLE_SUPPORT`.
+- **Schema/runtime sync** — validator, compiler, examples, Project instructions, and metadata now target manifest v1.1 / request v1.2 / compiled v1.3.
 
-## Why this workflow
+## Why W-Pack exists
 
-A one-shot multi-reference request is normally best on the web. Two-stage generation adds value only when the first image gets the scene and geometry right but drifts away from the intended style.
+ChatGPT can reason about Project files, current-chat images, and generated candidates, but those are not automatically equivalent image-model inputs. A selected Project reference can be semantically available to ChatGPT while its direct visual handoff remains unverified.
 
-W-Pack therefore uses:
+W-Pack therefore keeps **authority** and **transport** separate:
 
 ```text
-Project DEFAULT sources
-        ↓
-   FRESH generation
-        ↓
- structure/style audit
-     /          \
-  PASS       style FAIL
-   ↓              ↓
- DONE       SINGLE RESTYLE
-               ↓
-          final audit / stop
+Reference selected as authority
+          ↓
+  resolve bounded role
+          ↓
+ verify transport state
+     /            \
+visual bound   unverified
+    ↓              ↓
+direct use     source-derived profile
+     \            /
+       compile request
+            ↓
+       FRESH generation
+            ↓
+   structure / style audit
+            ↓
+ optional SINGLE_RESTYLE
 ```
-
-`SINGLE_RESTYLE` uses only:
-
-1. the fresh candidate as `STRUCTURE_EDIT_TARGET` — content and geometry authority only;
-2. the selected `STYLE_CORE` — sole rendering-style authority.
-
-It does not feed CHARACTER, POSE, COMPOSITION, PROPORTION, or ITEM references into the recovery edit.
 
 ## Authority model
 
 | Role | Controls | Does not control by default |
 | --- | --- | --- |
-| `STYLE` / internal `STYLE_CORE` | visual medium, rendering grammar, palette, texture, abstraction, value/shading, degree of realism | identity, exact pose, exact composition, item identity |
-| `CHARACTER` | identity, face, hair, stable appearance | global style, layout, environment |
+| `STYLE_CORE` | global medium, realism, abstraction, edge/value/color/surface/background grammar, visible-hair rendering grammar | identity, exact pose/composition, item identity |
+| `STYLE_SUPPORT` | only declared support domains | core medium, realism, shape abstraction |
+| `CHARACTER` | identity, facial features, hairstyle geometry, stable appearance | global style, layout, environment |
 | `POSE` | body arrangement, gesture, stance | identity, environment, global style |
 | `COMPOSITION` | framing, crop, camera angle, placement, hierarchy | identity, global style, item identity |
 | `PROPORTION` | relative physical scale | identity, detailed pose, global style |
-| `ITEM` | object identity, silhouette, structure | character identity, environment, global style |
+| `ITEM` | object identity, silhouette, structure, material | character identity, environment, global style |
 
-> **Visible does not mean authorized.**
+> **Visible does not mean authorized. Selected does not mean visually bound.**
 
-## STYLE_CORE
+## STYLE_CORE + STYLE_SUPPORT
 
-When exactly one STYLE authority is active, W-Pack treats it as `STYLE_CORE` internally.
+W-Pack does not average multiple equal styles.
 
-The core controls global visual grammar: medium, realism level, edge language, shape abstraction, shading/value structure, color behavior, surface treatment, and background rendering. Photographic terms such as “85mm”, “telephoto”, or “low angle” affect optical behavior and composition; they do not automatically turn an illustration into a photograph.
+`STYLE_CORE` owns the global grammar. `STYLE_SUPPORT` is a bounded adapter for declared domains such as color behavior, value structure, surface treatment, background rendering, edge treatment, or hair rendering grammar.
 
-## Project sources first
-
-A normal ChatGPT Project setup looks like:
+Core-only axes are:
 
 ```text
-ChatGPT Project
-├── reusable reference images
-├── Project instructions
-├── authority manifest
-└── DEFAULT source profile
+visual_medium
+ degree_of_realism
+ shape_abstraction
 ```
 
-The DEFAULT profile is active automatically. Current-chat attachments are used only when the user explicitly wants a temporary override or addition.
+A resolved request may contain at most three STYLE references total: one CORE plus up to two SUPPORT sources. The overall first-pass reference limit remains five.
+
+## Hair rendering
+
+v0.5.1 adds a dedicated hair policy because unconstrained image generation often falls back to a recognizable micro-strand signature.
+
+When the user or authoritative source does not explicitly require messy/frizzy/wet/windblown/strand-heavy hair, W-Pack uses the `CLEAN_MASS` fallback:
+
+```text
+silhouette
+  → major grouped locks
+  → internal texture
+  → sparse micro-strands
+```
+
+The default favors a clean continuous silhouette, grouped ends, natural gravity flow, lock-level highlights, and only a few physically plausible flyaways. It specifically avoids turning hair into plastic or a helmet: volume, overlap, softness, and lock-level variation remain necessary.
+
+If the source intentionally contains flyaways, curls, frizz, wet strands, or windblown separation, source authority wins over the fallback.
+
+## Reference transport
+
+W-Pack tracks these logical states:
+
+- `VISUAL_BOUND`
+- `VISUAL_INPUT_EXPECTED`
+- `PROJECT_CONTEXT_ONLY`
+- `TEXT_PROFILE_ONLY`
+- `UNVERIFIED_PROJECT_SOURCE`
+- `UNAVAILABLE`
+
+Only `VISUAL_BOUND` is direct visual-binding proof. Automatic style recovery can also proceed from usable STYLE DNA, but text fallback must never be described as exact visual reference use.
+
+## Conditional recovery
+
+The normal path is one FRESH generation. Recovery is available only when:
+
+1. mode was `FRESH`;
+2. structure passes;
+3. style fails;
+4. exactly one STYLE_CORE exists; and
+5. STYLE_CORE is visually bound or has usable STYLE DNA.
+
+Recovery uses:
+
+```text
+STRUCTURE_EDIT_TARGET
++ STYLE_CORE
++ optional one STYLE_SUPPORT whose support domains match failure_axes
+```
+
+There is no recursive restyle and no automatic third generation pass.
 
 ## Quick start
 
-1. Install [`skill/`](./skill) or the packaged `skill.zip`.
-2. Copy [`project/PROJECT_INSTRUCTIONS.md`](./project/PROJECT_INSTRUCTIONS.md) into your ChatGPT Project.
-3. Configure [`project/AUTHORITY_MANIFEST.example.json`](./project/AUTHORITY_MANIFEST.example.json) with your reusable sources.
-4. Use natural-language image requests.
+1. Install [`skill/`](./skill) or a packaged `skill.zip`.
+2. Add reusable images to your ChatGPT Project.
+3. Copy [`project/PROJECT_INSTRUCTIONS.md`](./project/PROJECT_INSTRUCTIONS.md) into Project instructions.
+4. Configure [`project/AUTHORITY_MANIFEST.example.json`](./project/AUTHORITY_MANIFEST.example.json).
+5. Use natural-language image requests.
 
-See [`QUICKSTART.md`](./QUICKSTART.md).
+See [`QUICKSTART.md`](./QUICKSTART.md) for the compact setup guide.
 
-## How it works
+## Schemas
 
-```text
-Natural request
-  -> resolve FRESH vs EDIT
-  -> activate DEFAULT Project profile
-  -> apply optional inline overrides
-  -> resolve bounded roles + singular STYLE_CORE
-  -> compile FRESH_FIRST request
-  -> ChatGPT image generation
-  -> structure/style audit
-  -> optional SINGLE_RESTYLE on style-only failure
-  -> stop; never recursive-restyle automatically
-```
+| Layer | Current schema |
+| --- | --- |
+| Authority manifest | `WPACK_AUTHORITY_MANIFEST_v1.1` |
+| Generation request | `WPACK_GENERATION_REQUEST_v1.2` |
+| Compiled request | `WPACK_COMPILED_REQUEST_v1.3` |
+| Style audit | `WPACK_STYLE_AUDIT_v1.1` |
+| Style recovery | `WPACK_STYLE_RECOVERY_REQUEST_v1.1` |
 
-W-Pack allows at most five first-pass references.
+Legacy manifest v1.0 and request v1.0/v1.1 remain accepted by the validator.
 
-## Validation
+## Validate
 
 ```bash
 python3 skill/scripts/self_test.py
 ```
 
-Expected:
+Expected output:
 
 ```text
 W-Pack self-test: PASS
@@ -132,16 +175,6 @@ W-Pack self-test: PASS
 
 ## Project status
 
-`WPACK_v0.4.0-chat-native` is the current ChatGPT Web milestone.
+Current release: **`WPACK_v0.5.1-chat-native`**
 
-This version keeps the Z-Pack-inspired authority chain while adapting it to a chat-native environment: persistent sources replace repeated explicit ID selection, and Z-Pack's staged style idea becomes a conditional recovery rather than the default path.
-
-## Repository map
-
-| Path | Purpose |
-| --- | --- |
-| [`skill/`](./skill) | installable ChatGPT Skill source |
-| [`project/`](./project) | ChatGPT Project setup templates |
-| [`PACK_SPEC.json`](./PACK_SPEC.json) | machine-readable W-Pack contract |
-| [`QUICKSTART.md`](./QUICKSTART.md) | setup guide |
-| [`LEGACY.md`](./LEGACY.md) | upstream runtime migration boundary |
+The legacy `src/zpack` runtime remains provenance-only and is not installed or exposed by the ChatGPT Web harness.
